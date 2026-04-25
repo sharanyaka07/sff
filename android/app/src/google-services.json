@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1078415121786",
+    "project_id": "safe-connect-6d7ed",
+    "storage_bucket": "safe-connect-6d7ed.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1078415121786:android:4849356f161ddecc514ac3",
+        "android_client_info": {
+          "package_name": "com.example.safe_connect"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4SQ2DnpejlwdRJs4VEbNUo-Dt7NqH_FM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

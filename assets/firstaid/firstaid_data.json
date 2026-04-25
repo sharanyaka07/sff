@@ -1,0 +1,482 @@
+{
+  "guides": [
+    {
+      "id": "cpr",
+      "icon": "favorite",
+      "color": 4294198319,
+      "severity": "critical",
+      "translations": {
+        "en": {
+          "title": "CPR (Cardiopulmonary Resuscitation)",
+          "description": "Life-saving technique for cardiac arrest",
+          "steps": [
+            {"number": 1, "title": "Check Responsiveness", "description": "Tap the person's shoulders and shout 'Are you okay?'", "duration": "5 seconds"},
+            {"number": 2, "title": "Call Emergency Services", "description": "Call 112 or your local emergency number immediately", "duration": "Immediate"},
+            {"number": 3, "title": "Position the Person", "description": "Place person on firm, flat surface. Tilt head back slightly", "duration": "10 seconds"},
+            {"number": 4, "title": "Hand Position", "description": "Place heel of hand on center of chest. Place other hand on top", "duration": "5 seconds"},
+            {"number": 5, "title": "Start Compressions", "description": "Push hard and fast at least 2 inches deep at 100-120 compressions per minute", "duration": "Continuous"},
+            {"number": 6, "title": "Give Rescue Breaths", "description": "After 30 compressions, give 2 rescue breaths if trained", "duration": "Every 30 compressions"},
+            {"number": 7, "title": "Continue CPR", "description": "Continue until emergency services arrive or person shows signs of life", "duration": "Until help arrives"}
+          ],
+          "warnings": ["Do not stop CPR unless trained personnel take over", "Hands-only CPR is effective if unsure about rescue breaths", "Call emergency services FIRST"],
+          "tips": ["Push hard and fast at 100-120 per minute", "Maintain proper hand position throughout", "Switch every 2 minutes if multiple people available"]
+        },
+        "hi": {
+          "title": "सीपीआर (कार्डियोपल्मोनरी रिससिटेशन)",
+          "description": "हृदय रुकने पर जीवन बचाने की तकनीक",
+          "steps": [
+            {"number": 1, "title": "प्रतिक्रिया जांचें", "description": "व्यक्ति के कंधों को थपथपाएं और पूछें क्या आप ठीक हैं", "duration": "5 सेकंड"},
+            {"number": 2, "title": "आपातकालीन सेवा बुलाएं", "description": "तुरंत 112 पर कॉल करें", "duration": "तुरंत"},
+            {"number": 3, "title": "व्यक्ति को लिटाएं", "description": "समतल सतह पर लिटाएं। सिर को थोड़ा पीछे झुकाएं", "duration": "10 सेकंड"},
+            {"number": 4, "title": "हाथ की स्थिति", "description": "छाती के केंद्र पर हथेली रखें। दूसरा हाथ ऊपर रखें", "duration": "5 सेकंड"},
+            {"number": 5, "title": "दबाव शुरू करें", "description": "तेज और गहरा दबाव दें। 100-120 प्रति मिनट", "duration": "लगातार"},
+            {"number": 6, "title": "सांस दें", "description": "30 दबाव के बाद 2 बार सांस दें यदि प्रशिक्षित हों", "duration": "हर 30 दबाव पर"},
+            {"number": 7, "title": "जारी रखें", "description": "मदद आने तक या जीवन के संकेत मिलने तक जारी रखें", "duration": "मदद आने तक"}
+          ],
+          "warnings": ["प्रशिक्षित व्यक्ति के आने तक रुकें नहीं", "यदि अनिश्चित हों तो केवल हाथों से सीपीआर करें", "पहले आपातकालीन सेवा को कॉल करें"],
+          "tips": ["100-120 प्रति मिनट की गति रखें", "हाथ की सही स्थिति बनाए रखें", "यदि कई लोग हों तो हर 2 मिनट में बदलें"]
+        },
+        "ta": {
+          "title": "சிபிஆர் (இதய நுரையீரல் புத்துயிர்ப்பு)",
+          "description": "இதயம் நின்றுபோகும்போது உயிரை காக்கும் நுட்பம்",
+          "steps": [
+            {"number": 1, "title": "விழிப்புணர்வை சரிபார்க்கவும்", "description": "தோள்களை தட்டி நீங்கள் சரியாக இருக்கிறீர்களா என்று கேளுங்கள்", "duration": "5 வினாடிகள்"},
+            {"number": 2, "title": "அவசர சேவைகளை அழையுங்கள்", "description": "உடனே 112 அழையுங்கள்", "duration": "உடனடியாக"},
+            {"number": 3, "title": "நிலையமைவு", "description": "தட்டையான இடத்தில் படுக்க வையுங்கள். தலையை சற்று பின்னோக்கி சாய்க்கவும்", "duration": "10 வினாடிகள்"},
+            {"number": 4, "title": "கை நிலை", "description": "மார்பின் மையத்தில் உள்ளங்கையை வையுங்கள்", "duration": "5 வினாடிகள்"},
+            {"number": 5, "title": "அழுத்தம் தொடங்குங்கள்", "description": "வலுவாகவும் வேகமாகவும் அழுத்துங்கள். நிமிடத்திற்கு 100-120 முறை", "duration": "தொடர்ச்சியாக"},
+            {"number": 6, "title": "மூச்சு கொடுங்கள்", "description": "30 அழுத்தங்களுக்கு பிறகு 2 மூச்சு கொடுங்கள்", "duration": "ஒவ்வொரு 30 அழுத்தத்திற்கும்"},
+            {"number": 7, "title": "தொடர்ந்து செய்யுங்கள்", "description": "உதவி வரும் வரை தொடருங்கள்", "duration": "உதவி வரும் வரை"}
+          ],
+          "warnings": ["பயிற்சி பெற்றவர் வரும் வரை நிறுத்தாதீர்கள்", "உறுதியில்லாவிட்டால் கை மட்டும் சிபிஆர் செய்யுங்கள்", "முதலில் அவசர சேவைகளை அழையுங்கள்"],
+          "tips": ["நிமிடத்திற்கு 100-120 முறை செய்யுங்கள்", "கை நிலையை சரியாக வைத்திருங்கள்", "பலர் இருந்தால் 2 நிமிடங்களுக்கு ஒரு முறை மாறுங்கள்"]
+        },
+        "kn": {
+          "title": "ಸಿಪಿಆರ್ (ಕಾರ್ಡಿಯೋಪಲ್ಮನರಿ ರಿಸಸಿಟೇಶನ್)",
+          "description": "ಹೃದಯ ನಿಲ್ಲಿದಾಗ ಜೀವ ಉಳಿಸುವ ತಂತ್ರ",
+          "steps": [
+            {"number": 1, "title": "ಪ್ರತಿಕ್ರಿಯೆ ಪರಿಶೀಲಿಸಿ", "description": "ಭುಜಗಳನ್ನು ತಟ್ಟಿ ನೀವು ಸರಿಯಾಗಿದ್ದೀರಾ ಎಂದು ಕೇಳಿ", "duration": "5 ಸೆಕೆಂಡ್"},
+            {"number": 2, "title": "ತುರ್ತು ಸೇವೆ ಕರೆಯಿರಿ", "description": "ತಕ್ಷಣ 112 ಕರೆ ಮಾಡಿ", "duration": "ತಕ್ಷಣ"},
+            {"number": 3, "title": "ವ್ಯಕ್ತಿಯನ್ನು ಮಲಗಿಸಿ", "description": "ಸಮತಟ್ಟಾದ ನೆಲದ ಮೇಲೆ ಮಲಗಿಸಿ. ತಲೆಯನ್ನು ಸ್ವಲ್ಪ ಹಿಂದಕ್ಕೆ ವಾಲಿಸಿ", "duration": "10 ಸೆಕೆಂಡ್"},
+            {"number": 4, "title": "ಕೈಯ ಸ್ಥಾನ", "description": "ಎದೆಯ ಮಧ್ಯಭಾಗದಲ್ಲಿ ಅಂಗೈ ಇರಿಸಿ. ಮತ್ತೊಂದು ಕೈ ಮೇಲೆ ಇಡಿ", "duration": "5 ಸೆಕೆಂಡ್"},
+            {"number": 5, "title": "ಒತ್ತಡ ಪ್ರಾರಂಭಿಸಿ", "description": "ಗಟ್ಟಿಯಾಗಿ ವೇಗವಾಗಿ ಒತ್ತಿ. ನಿಮಿಷಕ್ಕೆ 100-120 ಬಾರಿ", "duration": "ನಿರಂತರ"},
+            {"number": 6, "title": "ಉಸಿರು ಕೊಡಿ", "description": "30 ಒತ್ತಡಗಳ ನಂತರ 2 ಬಾರಿ ಉಸಿರು ಕೊಡಿ", "duration": "ಪ್ರತಿ 30 ಒತ್ತಡಕ್ಕೆ"},
+            {"number": 7, "title": "ಮುಂದುವರಿಸಿ", "description": "ಸಹಾಯ ಬರುವವರೆಗೆ ಮುಂದುವರಿಸಿ", "duration": "ಸಹಾಯ ಬರುವವರೆಗೆ"}
+          ],
+          "warnings": ["ತರಬೇತಿ ಪಡೆದ ವ್ಯಕ್ತಿ ಬರುವವರೆಗೆ ನಿಲ್ಲಿಸಬೇಡಿ", "ಸಂದೇಹ ಇದ್ದರೆ ಕೇವಲ ಕೈಗಳಿಂದ ಸಿಪಿಆರ್ ಮಾಡಿ", "ಮೊದಲು ತುರ್ತು ಸೇವೆ ಕರೆಯಿರಿ"],
+          "tips": ["ನಿಮಿಷಕ್ಕೆ 100-120 ವೇಗ ಕಾಯ್ದುಕೊಳ್ಳಿ", "ಕೈಯ ಸ್ಥಾನ ಸರಿಯಾಗಿ ಇರಿಸಿ", "ಹಲವರಿದ್ದರೆ 2 ನಿಮಿಷಕ್ಕೊಮ್ಮೆ ಬದಲಾಯಿಸಿ"]
+        },
+        "te": {
+          "title": "సిపిఆర్ (కార్డియోపల్మనరీ రిసస్సిటేషన్)",
+          "description": "గుండె ఆగిపోయినప్పుడు జీవితాన్ని కాపాడే పద్ధతి",
+          "steps": [
+            {"number": 1, "title": "స్పందన తనిఖీ చేయండి", "description": "భుజాలను తట్టి మీరు బాగున్నారా అని అడగండి", "duration": "5 సెకన్లు"},
+            {"number": 2, "title": "అత్యవసర సేవలను పిలవండి", "description": "వెంటనే 112 కి కాల్ చేయండి", "duration": "వెంటనే"},
+            {"number": 3, "title": "వ్యక్తిని పడుకోపెట్టండి", "description": "సమతలమైన ఉపరితలంపై పడుకోపెట్టండి. తలను కొంచెం వెనుకకు వంచండి", "duration": "10 సెకన్లు"},
+            {"number": 4, "title": "చేతి స్థానం", "description": "రొమ్ము మధ్యలో అరచేయి ఉంచండి. మరొక చేయి పైన ఉంచండి", "duration": "5 సెకన్లు"},
+            {"number": 5, "title": "ఒత్తిడి ప్రారంభించండి", "description": "గట్టిగా వేగంగా నొక్కండి. నిమిషానికి 100-120 సార్లు", "duration": "నిరంతరం"},
+            {"number": 6, "title": "శ్వాస ఇవ్వండి", "description": "30 ఒత్తిడుల తర్వాత 2 సార్లు శ్వాస ఇవ్వండి", "duration": "ప్రతి 30 ఒత్తిడులకు"},
+            {"number": 7, "title": "కొనసాగించండి", "description": "సహాయం వచ్చే వరకు కొనసాగించండి", "duration": "సహాయం వచ్చే వరకు"}
+          ],
+          "warnings": ["శిక్షణ పొందిన వ్యక్తి వచ్చే వరకు ఆపవద్దు", "అనిశ్చితంగా ఉంటే కేవలం చేతులతో సిపిఆర్ చేయండి", "ముందు అత్యవసర సేవలను పిలవండి"],
+          "tips": ["నిమిషానికి 100-120 వేగం కాపాడుకోండి", "చేతి స్థానాన్ని సరిగ్గా ఉంచండి", "అనేక మంది ఉంటే 2 నిమిషాలకు ఒకసారి మార్చండి"]
+        },
+        "ml": {
+          "title": "സിപിആർ (കാർഡിയോപൾമണറി റെസസിറ്റേഷൻ)",
+          "description": "ഹൃദയം നിലച്ചാൽ ജീവൻ രക്ഷിക്കുന്ന സാങ്കേതികവിദ്യ",
+          "steps": [
+            {"number": 1, "title": "പ്രതികരണം പരിശോധിക്കുക", "description": "തോളുകൾ തട്ടി നിങ്ങൾ ശരിയാണോ എന്ന് ചോദിക്കുക", "duration": "5 സെക്കൻഡ്"},
+            {"number": 2, "title": "അടിയന്തര സേവനം വിളിക്കുക", "description": "ഉടൻ 112 വിളിക്കുക", "duration": "ഉടൻ"},
+            {"number": 3, "title": "വ്യക്തിയെ കിടത്തുക", "description": "പരന്ന നിലത്ത് കിടത്തുക. തല അൽപ്പം പിന്നോട്ട് ചരിക്കുക", "duration": "10 സെക്കൻഡ്"},
+            {"number": 4, "title": "കൈ സ്ഥാനം", "description": "നെഞ്ചിൻ മധ്യത്തിൽ ഉള്ളങ്കൈ വയ്ക്കുക. മറ്റ് കൈ മുകളിൽ വയ്ക്കുക", "duration": "5 സെക്കൻഡ്"},
+            {"number": 5, "title": "സമ്മർദ്ദം ആരംഭിക്കുക", "description": "ശക്തമായും വേഗത്തിലും അമർത്തുക. മിനിറ്റിൽ 100-120 തവണ", "duration": "തുടർച്ചയായി"},
+            {"number": 6, "title": "ശ്വാസം നൽകുക", "description": "30 സമ്മർദ്ദങ്ങൾക്ക് ശേഷം 2 തവണ ശ്വാസം നൽകുക", "duration": "ഓരോ 30 സമ്മർദ്ദത്തിനും"},
+            {"number": 7, "title": "തുടരുക", "description": "സഹായം വരുന്നത് വരെ തുടരുക", "duration": "സഹായം വരുന്നത് വരെ"}
+          ],
+          "warnings": ["പരിശീലനം ലഭിച്ച ആൾ വരുന്നത് വരെ നിർത്തരുത്", "ഉറപ്പില്ലാത്ത പക്ഷം കൈകൾ മാത്രം ഉപയോഗിക്കുക", "ആദ്യം അടിയന്തര സേവനം വിളിക്കുക"],
+          "tips": ["മിനിറ്റിൽ 100-120 വേഗം നിലനിർത്തുക", "കൈ സ്ഥാനം ശരിയായി നിലനിർത്തുക", "ഒന്നിലധികം ആളുകൾ ഉണ്ടെങ്കിൽ 2 മിനിറ്റിൽ ഒരിക്കൽ മാറ്റുക"]
+        }
+      }
+    },
+    {
+      "id": "bleeding",
+      "icon": "water_drop",
+      "color": 4290490908,
+      "severity": "critical",
+      "translations": {
+        "en": {
+          "title": "Severe Bleeding",
+          "description": "Control and stop life-threatening bleeding",
+          "steps": [
+            {"number": 1, "title": "Safety First", "description": "Wear gloves if available to protect yourself", "duration": "Immediate"},
+            {"number": 2, "title": "Call Emergency Services", "description": "Call 112 for severe bleeding that will not stop", "duration": "Immediate"},
+            {"number": 3, "title": "Apply Direct Pressure", "description": "Use clean cloth or bandage. Press firmly on wound", "duration": "Continuous"},
+            {"number": 4, "title": "Maintain Pressure", "description": "Keep pressure for 10-15 minutes without looking at wound", "duration": "10-15 minutes"},
+            {"number": 5, "title": "Add More Layers", "description": "If blood soaks through, add more cloth on top. Do not remove first layer", "duration": "As needed"},
+            {"number": 6, "title": "Elevate if Possible", "description": "Raise injured limb above heart level if no fracture", "duration": "Continuous"},
+            {"number": 7, "title": "Apply Tourniquet", "description": "For limb wounds apply 2-3 inches above wound between wound and heart", "duration": "Until help arrives"}
+          ],
+          "warnings": ["Do not remove initial cloth layer", "Watch for signs of shock", "Do not apply tourniquet to neck or torso"],
+          "tips": ["Clean cloth works if bandages unavailable", "Keep person calm and lying down", "Do not use tourniquets on fingers or toes"]
+        },
+        "hi": {
+          "title": "गंभीर रक्तस्राव",
+          "description": "जीवन के लिए खतरनाक रक्तस्राव को नियंत्रित करें",
+          "steps": [
+            {"number": 1, "title": "सुरक्षा पहले", "description": "यदि उपलब्ध हो तो दस्ताने पहनें", "duration": "तुरंत"},
+            {"number": 2, "title": "आपातकालीन सेवा बुलाएं", "description": "गंभीर रक्तस्राव के लिए 112 पर कॉल करें", "duration": "तुरंत"},
+            {"number": 3, "title": "सीधा दबाव दें", "description": "साफ कपड़े से घाव पर मजबूती से दबाएं", "duration": "लगातार"},
+            {"number": 4, "title": "दबाव बनाए रखें", "description": "10-15 मिनट तक घाव को देखे बिना दबाव बनाए रखें", "duration": "10-15 मिनट"},
+            {"number": 5, "title": "परतें जोड़ें", "description": "यदि खून भीग जाए ऊपर और कपड़ा लगाएं। पहली परत न हटाएं", "duration": "आवश्यकतानुसार"},
+            {"number": 6, "title": "ऊंचा उठाएं", "description": "फ्रैक्चर न हो तो घायल अंग को हृदय से ऊपर उठाएं", "duration": "लगातार"},
+            {"number": 7, "title": "टूर्निकेट लगाएं", "description": "घाव से 5-7 सेमी ऊपर लगाएं", "duration": "मदद आने तक"}
+          ],
+          "warnings": ["पहली परत न हटाएं", "सदमे के संकेतों पर ध्यान दें", "गर्दन पर टूर्निकेट न लगाएं"],
+          "tips": ["साफ कपड़ा काम करता है", "व्यक्ति को शांत रखें", "उंगलियों पर टूर्निकेट न लगाएं"]
+        },
+        "ta": {
+          "title": "கடுமையான இரத்தப்போக்கு",
+          "description": "உயிருக்கு ஆபத்தான இரத்தப்போக்கை கட்டுப்படுத்துங்கள்",
+          "steps": [
+            {"number": 1, "title": "பாதுகாப்பு முதலில்", "description": "கையுறைகள் இருந்தால் அணியுங்கள்", "duration": "உடனடியாக"},
+            {"number": 2, "title": "அவசர சேவைகளை அழையுங்கள்", "description": "கடுமையான இரத்தப்போக்கிற்கு 112 அழையுங்கள்", "duration": "உடனடியாக"},
+            {"number": 3, "title": "நேரடி அழுத்தம் கொடுங்கள்", "description": "சுத்தமான துணியால் காயத்தில் வலுவாக அழுத்துங்கள்", "duration": "தொடர்ச்சியாக"},
+            {"number": 4, "title": "அழுத்தத்தை பராமரியுங்கள்", "description": "10-15 நிமிடங்கள் அழுத்தத்தை வைத்திருங்கள்", "duration": "10-15 நிமிடங்கள்"},
+            {"number": 5, "title": "அடுக்குகளை சேர்க்கவும்", "description": "இரத்தம் ஊறினால் மேலே துணி சேர்க்கவும். முதல் அடுக்கை அகற்றாதீர்கள்", "duration": "தேவைப்படும்போது"},
+            {"number": 6, "title": "உயரமாக வையுங்கள்", "description": "எலும்பு முறிவு இல்லாவிட்டால் உறுப்பை இதயத்திற்கு மேலே உயர்த்துங்கள்", "duration": "தொடர்ச்சியாக"},
+            {"number": 7, "title": "டோர்னிக்கெட் போடுங்கள்", "description": "காயத்திற்கு 5-7 செமீ மேலே போடுங்கள்", "duration": "உதவி வரும் வரை"}
+          ],
+          "warnings": ["முதல் அடுக்கை அகற்றாதீர்கள்", "அதிர்ச்சியின் அறிகுறிகளை கவனியுங்கள்", "கழுத்தில் டோர்னிக்கெட் போடாதீர்கள்"],
+          "tips": ["சுத்தமான துணி பயன்படுத்துங்கள்", "நபரை அமைதியாக வையுங்கள்", "விரல்களில் டோர்னிக்கெட் பயன்படுத்தாதீர்கள்"]
+        },
+        "kn": {
+          "title": "ತೀವ್ರ ರಕ್ತಸ್ರಾವ",
+          "description": "ಜೀವಕ್ಕೆ ಅಪಾಯಕಾರಿ ರಕ್ತಸ್ರಾವವನ್ನು ನಿಯಂತ್ರಿಸಿ",
+          "steps": [
+            {"number": 1, "title": "ಮೊದಲು ಸುರಕ್ಷತೆ", "description": "ಲಭ್ಯವಿದ್ದರೆ ಕೈಗವಸುಗಳನ್ನು ಹಾಕಿ", "duration": "ತಕ್ಷಣ"},
+            {"number": 2, "title": "ತುರ್ತು ಸೇವೆ ಕರೆಯಿರಿ", "description": "ತೀವ್ರ ರಕ್ತಸ್ರಾವಕ್ಕೆ 112 ಕರೆ ಮಾಡಿ", "duration": "ತಕ್ಷಣ"},
+            {"number": 3, "title": "ನೇರ ಒತ್ತಡ ಹಾಕಿ", "description": "ಸ್ವಚ್ಛ ಬಟ್ಟೆಯಿಂದ ಗಾಯದ ಮೇಲೆ ಗಟ್ಟಿಯಾಗಿ ಒತ್ತಿ", "duration": "ನಿರಂತರ"},
+            {"number": 4, "title": "ಒತ್ತಡ ಕಾಯ್ದುಕೊಳ್ಳಿ", "description": "ಗಾಯ ನೋಡದೆ 10-15 ನಿಮಿಷ ಒತ್ತಡ ಕಾಯ್ದುಕೊಳ್ಳಿ", "duration": "10-15 ನಿಮಿಷ"},
+            {"number": 5, "title": "ಪದರ ಸೇರಿಸಿ", "description": "ರಕ್ತ ನೆನೆದರೆ ಮೇಲೆ ಮತ್ತಷ್ಟು ಬಟ್ಟೆ ಸೇರಿಸಿ. ಮೊದಲ ಪದರ ತೆಗೆಯಬೇಡಿ", "duration": "ಅಗತ್ಯವಿದ್ದಾಗ"},
+            {"number": 6, "title": "ಎತ್ತರಕ್ಕೆ ಎತ್ತಿ", "description": "ಮುರಿತ ಇಲ್ಲದಿದ್ದರೆ ಅಂಗವನ್ನು ಹೃದಯಕ್ಕಿಂತ ಎತ್ತರ ಇರಿಸಿ", "duration": "ನಿರಂತರ"},
+            {"number": 7, "title": "ಟೂರ್ನಿಕೆ ಹಾಕಿ", "description": "ಗಾಯದ 5-7 ಸೆಂಮೀ ಮೇಲೆ ಹಾಕಿ", "duration": "ಸಹಾಯ ಬರುವವರೆಗೆ"}
+          ],
+          "warnings": ["ಮೊದಲ ಪದರ ತೆಗೆಯಬೇಡಿ", "ಆಘಾತದ ಲಕ್ಷಣಗಳನ್ನು ಗಮನಿಸಿ", "ಕತ್ತಿನ ಮೇಲೆ ಟೂರ್ನಿಕೆ ಹಾಕಬೇಡಿ"],
+          "tips": ["ಸ್ವಚ್ಛ ಬಟ್ಟೆ ಬಳಸಬಹುದು", "ವ್ಯಕ್ತಿಯನ್ನು ಶಾಂತವಾಗಿ ಇಡಿ", "ಬೆರಳುಗಳ ಮೇಲೆ ಟೂರ್ನಿಕೆ ಹಾಕಬೇಡಿ"]
+        },
+        "te": {
+          "title": "తీవ్రమైన రక్తస్రావం",
+          "description": "ప్రాణాంతక రక్తస్రావాన్ని నియంత్రించండి",
+          "steps": [
+            {"number": 1, "title": "మొదట భద్రత", "description": "అందుబాటులో ఉంటే చేతి తొడుగులు వేసుకోండి", "duration": "వెంటనే"},
+            {"number": 2, "title": "అత్యవసర సేవలను పిలవండి", "description": "తీవ్రమైన రక్తస్రావానికి 112 కి కాల్ చేయండి", "duration": "వెంటనే"},
+            {"number": 3, "title": "నేరుగా ఒత్తిడి వేయండి", "description": "శుభ్రమైన గుడ్డతో గాయంపై గట్టిగా నొక్కండి", "duration": "నిరంతరం"},
+            {"number": 4, "title": "ఒత్తిడి కాపాడుకోండి", "description": "గాయం చూడకుండా 10-15 నిమిషాలు ఒత్తిడి నిలుపుకోండి", "duration": "10-15 నిమిషాలు"},
+            {"number": 5, "title": "పొరలు జోడించండి", "description": "రక్తం తడిచిపోతే పైన మరిన్ని గుడ్డలు వేయండి. మొదటి పొర తీయవద్దు", "duration": "అవసరమైనప్పుడు"},
+            {"number": 6, "title": "పైకి ఎత్తండి", "description": "విరుగుడు లేకుంటే గాయపడిన అంగాన్ని గుండెకంటే ఎత్తులో ఉంచండి", "duration": "నిరంతరం"},
+            {"number": 7, "title": "టోర్నికెట్ వేయండి", "description": "గాయానికి 5-7 సెంమీ పైన వేయండి", "duration": "సహాయం వచ్చే వరకు"}
+          ],
+          "warnings": ["మొదటి పొర తీయవద్దు", "షాక్ సంకేతాలను గమనించండి", "మెడపై టోర్నికెట్ వేయవద్దు"],
+          "tips": ["శుభ్రమైన గుడ్డ పనిచేస్తుంది", "వ్యక్తిని శాంతంగా ఉంచండి", "వేళ్ళపై టోర్నికెట్ వేయవద్దు"]
+        },
+        "ml": {
+          "title": "കടുത്ത രക്തസ്രാവം",
+          "description": "ജീവനു ഭീഷണിയായ രക്തസ്രാവം നിയന്ത്രിക്കുക",
+          "steps": [
+            {"number": 1, "title": "ആദ്യം സുരക്ഷ", "description": "ലഭ്യമാണെങ്കിൽ കൈയ്യുറകൾ ധരിക്കുക", "duration": "ഉടൻ"},
+            {"number": 2, "title": "അടിയന്തര സേവനം വിളിക്കുക", "description": "കടുത്ത രക്തസ്രാവത്തിന് 112 വിളിക്കുക", "duration": "ഉടൻ"},
+            {"number": 3, "title": "നേരിട്ട് സമ്മർദ്ദം ചെലുത്തുക", "description": "ശുദ്ധമായ തുണി ഉപയോഗിച്ച് മുറിവിൽ ശക്തമായി അമർത്തുക", "duration": "തുടർച്ചയായി"},
+            {"number": 4, "title": "സമ്മർദ്ദം നിലനിർത്തുക", "description": "മുറിവ് നോക്കാതെ 10-15 മിനിറ്റ് സമ്മർദ്ദം നിലനിർത്തുക", "duration": "10-15 മിനിറ്റ്"},
+            {"number": 5, "title": "പാളികൾ ചേർക്കുക", "description": "രക്തം ആഴ്ന്നാൽ മുകളിൽ കൂടുതൽ തുണി ചേർക്കുക. ആദ്യ പാളി നീക്കരുത്", "duration": "ആവശ്യമുള്ളപ്പോൾ"},
+            {"number": 6, "title": "ഉയർത്തിപ്പിടിക്കുക", "description": "ഒടിവ് ഇല്ലെങ്കിൽ മുറിവേറ്റ അവയവം ഹൃദയത്തിനു മുകളിൽ ഉയർത്തുക", "duration": "തുടർച്ചയായി"},
+            {"number": 7, "title": "ടൂർണിക്കറ്റ് ഇടുക", "description": "മുറിവിന് 5-7 സെ.മീ. മുകളിൽ ഇടുക", "duration": "സഹായം വരുന്നത് വരെ"}
+          ],
+          "warnings": ["ആദ്യ പാളി നീക്കരുത്", "ഷോക്കിന്റെ ലക്ഷണങ്ങൾ ശ്രദ്ധിക്കുക", "കഴുത്തിൽ ടൂർണിക്കറ്റ് ഇടരുത്"],
+          "tips": ["ശുദ്ധമായ തുണി ഉപയോഗിക്കാം", "വ്യക്തിയെ ശാന്തമായി നിലനിർത്തുക", "വിരലുകളിൽ ടൂർണിക്കറ്റ് ഇടരുത്"]
+        }
+      }
+    },
+    {
+      "id": "choking",
+      "icon": "air",
+      "color": 4279893440,
+      "severity": "critical",
+      "translations": {
+        "en": {
+          "title": "Choking",
+          "description": "Clear airway obstruction quickly",
+          "steps": [
+            {"number": 1, "title": "Assess the Situation", "description": "Ask 'Are you choking?' If they cannot respond act immediately", "duration": "5 seconds"},
+            {"number": 2, "title": "Call Emergency Services", "description": "Call 112 if person cannot cough or speak", "duration": "Immediate"},
+            {"number": 3, "title": "Abdominal Thrusts - Heimlich", "description": "Stand behind person. Place fist above navel below ribcage", "duration": "5 seconds"},
+            {"number": 4, "title": "Perform Thrusts", "description": "Quick upward thrusts. Repeat until object dislodges", "duration": "Repeat as needed"},
+            {"number": 5, "title": "Back Blows for Infants", "description": "5 back blows between shoulder blades then 5 chest thrusts", "duration": "Repeat cycle"},
+            {"number": 6, "title": "If Unconscious", "description": "Begin CPR. Check for object in mouth before rescue breaths", "duration": "Continuous"}
+          ],
+          "warnings": ["Do not perform abdominal thrusts on infants", "Be careful not to injure ribs", "Always call emergency services"],
+          "tips": ["Lean person forward to help gravity", "After object removed get medical evaluation", "Do not do blind finger sweeps"]
+        },
+        "hi": {
+          "title": "गला घुटना",
+          "description": "वायुमार्ग की रुकावट को जल्दी साफ करें",
+          "steps": [
+            {"number": 1, "title": "स्थिति समझें", "description": "पूछें क्या गला घुट रहा है। जवाब न मिले तो तुरंत काम करें", "duration": "5 सेकंड"},
+            {"number": 2, "title": "आपातकालीन सेवा बुलाएं", "description": "यदि खांस या बोल नहीं सकता तो 112 कॉल करें", "duration": "तुरंत"},
+            {"number": 3, "title": "पेट पर जोर - हेमलिक", "description": "पीछे खड़े हों। नाभि के ऊपर मुट्ठी रखें", "duration": "5 सेकंड"},
+            {"number": 4, "title": "जोर लगाएं", "description": "तेज ऊपर की ओर जोर लगाएं। वस्तु निकलने तक दोहराएं", "duration": "आवश्यकतानुसार"},
+            {"number": 5, "title": "शिशुओं के लिए", "description": "5 पीठ थपकी फिर 5 छाती दबाव", "duration": "चक्र दोहराएं"},
+            {"number": 6, "title": "बेहोश हो जाए तो", "description": "सीपीआर शुरू करें। मुंह में वस्तु जांचें", "duration": "लगातार"}
+          ],
+          "warnings": ["शिशुओं पर पेट का जोर न लगाएं", "पसलियों को चोट न लगाएं", "आपातकालीन सेवा जरूर बुलाएं"],
+          "tips": ["व्यक्ति को आगे झुकाएं", "वस्तु निकलने के बाद डॉक्टर से मिलें", "बिना देखे उंगली न डालें"]
+        },
+        "ta": {
+          "title": "தொண்டை அடைப்பு",
+          "description": "சுவாசப்பாதையின் அடைப்பை நீக்குங்கள்",
+          "steps": [
+            {"number": 1, "title": "நிலையை மதிப்பிடுங்கள்", "description": "தொண்டை அடைத்திருக்கிறதா என கேளுங்கள். பதில் இல்லாவிட்டால் உடனே செயல்படுங்கள்", "duration": "5 வினாடிகள்"},
+            {"number": 2, "title": "அவசர சேவைகளை அழையுங்கள்", "description": "இருமல் அல்லது பேச முடியாவிட்டால் 112 அழையுங்கள்", "duration": "உடனடியாக"},
+            {"number": 3, "title": "வயிற்று அழுத்தம் - ஹெம்லிக்", "description": "நபருக்கு பின்னால் நிற்கவும். வயிற்றில் கை வையுங்கள்", "duration": "5 வினாடிகள்"},
+            {"number": 4, "title": "அழுத்தம் கொடுங்கள்", "description": "மேல்நோக்கி வேகமாக அழுத்தம் கொடுங்கள். பொருள் வெளியே வரும் வரை", "duration": "தேவைப்படும்போது"},
+            {"number": 5, "title": "குழந்தைகளுக்கு", "description": "5 முதுகு தட்டல் பின்னர் 5 மார்பு அழுத்தங்கள்", "duration": "சுழற்சி"},
+            {"number": 6, "title": "சுயநினைவு இழந்தால்", "description": "சிபிஆர் தொடங்குங்கள். வாயில் பொருள் இருக்கிறதா சரிபார்க்கவும்", "duration": "தொடர்ச்சியாக"}
+          ],
+          "warnings": ["குழந்தைகளுக்கு வயிற்று அழுத்தம் வேண்டாம்", "விலா எலும்புகளை காயப்படுத்தாதீர்கள்", "அவசர சேவைகளை அழையுங்கள்"],
+          "tips": ["நபரை முன்னோக்கி சாய்க்கவும்", "பொருள் வந்த பிறகு மருத்துவரை பாருங்கள்", "கண்மூடிக்கொண்டு விரலை நுழைக்காதீர்கள்"]
+        },
+        "kn": {
+          "title": "ಗಂಟಲು ಕಟ್ಟಿಕೊಳ್ಳುವುದು",
+          "description": "ಉಸಿರಾಟದ ಮಾರ್ಗದ ಅಡಚಣೆ ತೆಗೆಯಿರಿ",
+          "steps": [
+            {"number": 1, "title": "ಪರಿಸ್ಥಿತಿ ಅರ್ಥಮಾಡಿ", "description": "ಗಂಟಲು ಕಟ್ಟಿದೆಯಾ ಎಂದು ಕೇಳಿ. ಉತ್ತರ ಇಲ್ಲದಿದ್ದರೆ ತಕ್ಷಣ ಕ್ರಿಯೆ ತೆಗೆಯಿರಿ", "duration": "5 ಸೆಕೆಂಡ್"},
+            {"number": 2, "title": "ತುರ್ತು ಸೇವೆ ಕರೆಯಿರಿ", "description": "ಕೆಮ್ಮಲು ಅಥವಾ ಮಾತಾಡಲು ಆಗದಿದ್ದರೆ 112 ಕರೆ ಮಾಡಿ", "duration": "ತಕ್ಷಣ"},
+            {"number": 3, "title": "ಹೊಟ್ಟೆ ಒತ್ತಡ - ಹೆಮ್ಲಿಕ್", "description": "ಹಿಂದೆ ನಿಂತು ಹೊಕ್ಕುಳಿನ ಮೇಲೆ ಮುಷ್ಟಿ ಇಡಿ", "duration": "5 ಸೆಕೆಂಡ್"},
+            {"number": 4, "title": "ಒತ್ತಡ ಕೊಡಿ", "description": "ವೇಗವಾಗಿ ಮೇಲ್ಮುಖ ಒತ್ತಡ ಕೊಡಿ. ವಸ್ತು ಹೊರಬರುವವರೆಗೆ", "duration": "ಅಗತ್ಯವಿದ್ದಾಗ"},
+            {"number": 5, "title": "ಶಿಶುಗಳಿಗೆ", "description": "5 ಬೆನ್ನು ತಟ್ಟುವಿಕೆ ನಂತರ 5 ಎದೆ ಒತ್ತಡ", "duration": "ಚಕ್ರ ಪುನರಾವರ್ತಿಸಿ"},
+            {"number": 6, "title": "ಪ್ರಜ್ಞಾ ತಪ್ಪಿದರೆ", "description": "ಸಿಪಿಆರ್ ಪ್ರಾರಂಭಿಸಿ. ಬಾಯಿಯಲ್ಲಿ ವಸ್ತು ಇದೆಯೇ ಎಂದು ಪರಿಶೀಲಿಸಿ", "duration": "ನಿರಂತರ"}
+          ],
+          "warnings": ["ಶಿಶುಗಳಿಗೆ ಹೊಟ್ಟೆ ಒತ್ತಡ ಕೊಡಬೇಡಿ", "ಪಕ್ಕೆಲುಬುಗಳಿಗೆ ಗಾಯ ಆಗದಂತೆ ಜಾಗ್ರತೆ", "ತುರ್ತು ಸೇವೆ ಕರೆಯಿರಿ"],
+          "tips": ["ವ್ಯಕ್ತಿಯನ್ನು ಮುಂದಕ್ಕೆ ಬಾಗಿಸಿ", "ವಸ್ತು ಬಂದ ನಂತರ ವೈದ್ಯರ ಬಳಿ ಹೋಗಿ", "ಕಣ್ಣು ಮುಚ್ಚಿ ಬೆರಳು ಹಾಕಬೇಡಿ"]
+        },
+        "te": {
+          "title": "గొంతు అడ్డుపడటం",
+          "description": "శ్వాస మార్గంలో అడ్డుని తొలగించండి",
+          "steps": [
+            {"number": 1, "title": "పరిస్థితిని అర్థం చేసుకోండి", "description": "గొంతు అడ్డుపడిందా అని అడగండి. సమాధానం లేకుంటే వెంటనే చర్య తీసుకోండి", "duration": "5 సెకన్లు"},
+            {"number": 2, "title": "అత్యవసర సేవలను పిలవండి", "description": "దగ్గు లేదా మాట్లాడలేకపోతే 112 కి కాల్ చేయండి", "duration": "వెంటనే"},
+            {"number": 3, "title": "కడుపు ఒత్తిడి - హైమ్లిక్", "description": "వెనుక నిలబడి నాభి పైన పిడికిలి వేయండి", "duration": "5 సెకన్లు"},
+            {"number": 4, "title": "ఒత్తిడి ఇవ్వండి", "description": "వేగంగా పైకి ఒత్తిడి ఇవ్వండి. వస్తువు బయటకు వచ్చే వరకు", "duration": "అవసరమైనప్పుడు"},
+            {"number": 5, "title": "శిశువులకు", "description": "5 వీపు తట్టడాలు తర్వాత 5 ఛాతీ ఒత్తిడులు", "duration": "చక్రం పునరావృతం"},
+            {"number": 6, "title": "స్పృహ కోల్పోతే", "description": "సిపిఆర్ ప్రారంభించండి. నోటిలో వస్తువు ఉందా తనిఖీ చేయండి", "duration": "నిరంతరం"}
+          ],
+          "warnings": ["శిశువులకు కడుపు ఒత్తిడి వేయవద్దు", "పక్కటెముకలు గాయపడకుండా జాగ్రత్త", "అత్యవసర సేవలను పిలవండి"],
+          "tips": ["వ్యక్తిని ముందుకు వంచండి", "వస్తువు వచ్చాక డాక్టర్ దగ్గరికి వెళ్ళండి", "కళ్ళు మూసుకుని వేలు వేయవద్దు"]
+        },
+        "ml": {
+          "title": "തൊണ്ട അടഞ്ഞ്",
+          "description": "ശ്വാസനാളത്തിലെ തടസ്സം നീക്കുക",
+          "steps": [
+            {"number": 1, "title": "സ്ഥിതി മനസ്സിലാക്കുക", "description": "തൊണ്ട അടഞ്ഞോ എന്ന് ചോദിക്കുക. ഉത്തരം ഇല്ലെങ്കിൽ ഉടൻ പ്രവർത്തിക്കുക", "duration": "5 സെക്കൻഡ്"},
+            {"number": 2, "title": "അടിയന്തര സേവനം വിളിക്കുക", "description": "ചുമക്കാനോ സംസാരിക്കാനോ കഴിയുന്നില്ലെങ്കിൽ 112 വിളിക്കുക", "duration": "ഉടൻ"},
+            {"number": 3, "title": "വയർ സമ്മർദ്ദം - ഹൈംലിക്", "description": "പിന്നിൽ നിന്ന് നാഭിക്ക് മുകളിൽ മുഷ്ടി വയ്ക്കുക", "duration": "5 സെക്കൻഡ്"},
+            {"number": 4, "title": "സമ്മർദ്ദം ചെലുത്തുക", "description": "വേഗത്തിൽ മുകളിലേക്ക് സമ്മർദ്ദം ചെലുത്തുക. വസ്തു പുറത്തുവരുന്നത് വരെ", "duration": "ആവശ്യമുള്ളപ്പോൾ"},
+            {"number": 5, "title": "ശിശുക്കൾക്ക്", "description": "5 പുറം തട്ടൽ പിന്നെ 5 നെഞ്ചിൽ സമ്മർദ്ദം", "duration": "ചക്രം ആവർത്തിക്കുക"},
+            {"number": 6, "title": "ബോധം നഷ്ടമായാൽ", "description": "സിപിആർ ആരംഭിക്കുക. വായിൽ വസ്തു ഉണ്ടോ എന്ന് പരിശോധിക്കുക", "duration": "തുടർച്ചയായി"}
+          ],
+          "warnings": ["ശിശുക്കൾക്ക് വയർ സമ്മർദ്ദം ചെലുത്തരുത്", "വാരിയെലുകൾ ക്ഷതപ്പെടാതെ ശ്രദ്ധിക്കുക", "അടിയന്തര സേവനം വിളിക്കുക"],
+          "tips": ["വ്യക്തിയെ മുന്നോട്ട് ചാഞ്ഞ് നിർത്തുക", "വസ്തു പുറത്തുവന്ന ശേഷം ഡോക്ടറിനെ കാണുക", "കണ്ണടച്ച് വിരൽ ഇടരുത്"]
+        }
+      }
+    },
+    {
+      "id": "burns",
+      "icon": "local_fire_department",
+      "color": 4293256729,
+      "severity": "high",
+      "translations": {
+        "en": {
+          "title": "Burns",
+          "description": "Treat thermal chemical and electrical burns",
+          "steps": [
+            {"number": 1, "title": "Stop the Burning", "description": "Remove from heat source. Stop Drop Roll if clothing is on fire", "duration": "Immediate"},
+            {"number": 2, "title": "Cool the Burn", "description": "Cool with running water for 10-20 minutes not ice", "duration": "10-20 minutes"},
+            {"number": 3, "title": "Remove Jewelry", "description": "Remove rings and bracelets before swelling occurs", "duration": "1 minute"},
+            {"number": 4, "title": "Assess Burn Severity", "description": "1st degree red skin. 2nd blisters. 3rd charred skin", "duration": "Visual"},
+            {"number": 5, "title": "Cover the Burn", "description": "Use sterile non-stick bandage or clean cloth", "duration": "Continuous"},
+            {"number": 6, "title": "Pain Management", "description": "Over-the-counter pain reliever like ibuprofen", "duration": "As directed"},
+            {"number": 7, "title": "Seek Medical Help", "description": "See doctor for 2nd or 3rd degree burns or burns larger than 3 inches", "duration": "ASAP"}
+          ],
+          "warnings": ["Do not use ice directly on skin", "Do not apply ointments or oils", "Do not pop blisters"],
+          "tips": ["Keep burn covered to prevent infection", "Stay hydrated after burns", "Loose cool clothing helps"]
+        },
+        "hi": {
+          "title": "जलन",
+          "description": "थर्मल रासायनिक और विद्युत जलन का उपचार",
+          "steps": [
+            {"number": 1, "title": "जलना बंद करें", "description": "गर्मी से हटाएं। कपड़े में आग हो तो रुकें गिरें लुढ़कें", "duration": "तुरंत"},
+            {"number": 2, "title": "ठंडा करें", "description": "10-20 मिनट ठंडे बहते पानी से ठंडा करें बर्फ नहीं", "duration": "10-20 मिनट"},
+            {"number": 3, "title": "आभूषण हटाएं", "description": "सूजन आने से पहले अंगूठियां कंगन हटाएं", "duration": "1 मिनट"},
+            {"number": 4, "title": "गंभीरता जांचें", "description": "पहली डिग्री लाल त्वचा। दूसरी फफोले। तीसरी जली त्वचा", "duration": "दृश्य"},
+            {"number": 5, "title": "जलन ढकें", "description": "बाँझ पट्टी या साफ कपड़े से ढकें", "duration": "लगातार"},
+            {"number": 6, "title": "दर्द प्रबंधन", "description": "इबुप्रोफेन जैसी दर्द निवारक दवा लें", "duration": "निर्देशानुसार"},
+            {"number": 7, "title": "चिकित्सा सहायता", "description": "दूसरी तीसरी डिग्री जलन के लिए डॉक्टर से मिलें", "duration": "जल्द से जल्द"}
+          ],
+          "warnings": ["त्वचा पर सीधे बर्फ न लगाएं", "मलहम या तेल न लगाएं", "फफोले न फोड़ें"],
+          "tips": ["संक्रमण से बचाने के लिए जलन ढकी रखें", "पानी पीते रहें", "ढीले ठंडे कपड़े पहनें"]
+        },
+        "ta": {
+          "title": "தீக்காயங்கள்",
+          "description": "வெப்ப இரசாயன மற்றும் மின்சார தீக்காயங்களை சிகிச்சை செய்யுங்கள்",
+          "steps": [
+            {"number": 1, "title": "எரிவதை நிறுத்துங்கள்", "description": "வெப்ப மூலத்திலிருந்து நகருங்கள்", "duration": "உடனடியாக"},
+            {"number": 2, "title": "குளிர்விக்கவும்", "description": "10-20 நிமிடங்கள் குளிர்ந்த தண்ணீரில் குளிர்விக்கவும்", "duration": "10-20 நிமிடங்கள்"},
+            {"number": 3, "title": "நகைகளை அகற்றுங்கள்", "description": "வீக்கம் வருவதற்கு முன் நகைகள் அகற்றுங்கள்", "duration": "1 நிமிடம்"},
+            {"number": 4, "title": "தீவிரத்தை மதிப்பிடுங்கள்", "description": "1வது சிவந்த தோல். 2வது கொப்புளங்கள். 3வது கரிந்த தோல்", "duration": "பார்வை"},
+            {"number": 5, "title": "காயத்தை மூடுங்கள்", "description": "கட்டு அல்லது சுத்தமான துணி பயன்படுத்துங்கள்", "duration": "தொடர்ச்சியாக"},
+            {"number": 6, "title": "வலி மேலாண்மை", "description": "வலி நிவாரணி எடுங்கள்", "duration": "வழிமுறைப்படி"},
+            {"number": 7, "title": "மருத்துவ உதவி", "description": "2வது 3வது தரம் காயங்களுக்கு மருத்துவரை பாருங்கள்", "duration": "விரைவில்"}
+          ],
+          "warnings": ["தோலில் நேரடியாக பனிக்கட்டி வைக்காதீர்கள்", "களிம்பு தடவாதீர்கள்", "கொப்புளங்களை வெடிக்காதீர்கள்"],
+          "tips": ["காயத்தை மூடி வையுங்கள்", "நீர்மம் அதிகமாக குடியுங்கள்", "தளர்வான குளிர்ந்த ஆடை உதவுகிறது"]
+        },
+        "kn": {
+          "title": "ಸುಡುವಿಕೆ",
+          "description": "ಉಷ್ಣ ರಾಸಾಯನಿಕ ಮತ್ತು ವಿದ್ಯುತ್ ಸುಡುವಿಕೆ ಚಿಕಿತ್ಸೆ",
+          "steps": [
+            {"number": 1, "title": "ಸುಡುವಿಕೆ ನಿಲ್ಲಿಸಿ", "description": "ಶಾಖದಿಂದ ದೂರ ತೆಗೆಯಿರಿ. ಬಟ್ಟೆಗೆ ಬೆಂಕಿ ಇದ್ದರೆ ನಿಲ್ಲಿ ಬೀಳಿ ಉರುಳಿ", "duration": "ತಕ್ಷಣ"},
+            {"number": 2, "title": "ತಂಪು ಮಾಡಿ", "description": "10-20 ನಿಮಿಷ ತಣ್ಣೀರಿನಿಂದ ತಂಪು ಮಾಡಿ ಐಸ್ ಬೇಡ", "duration": "10-20 ನಿಮಿಷ"},
+            {"number": 3, "title": "ಆಭರಣ ತೆಗೆಯಿರಿ", "description": "ಊತ ಬರುವ ಮುನ್ನ ಉಂಗುರ ಬಳೆ ತೆಗೆಯಿರಿ", "duration": "1 ನಿಮಿಷ"},
+            {"number": 4, "title": "ತೀವ್ರತೆ ಅಂದಾಜು ಮಾಡಿ", "description": "1ನೇ ಡಿಗ್ರಿ ಕೆಂಪು ಚರ್ಮ. 2ನೇ ಗುಳ್ಳೆಗಳು. 3ನೇ ಕರಿದ ಚರ್ಮ", "duration": "ದೃಶ್ಯ"},
+            {"number": 5, "title": "ಮುಚ್ಚಿ", "description": "ಸ್ವಚ್ಛ ಬ್ಯಾಂಡೇಜ್ ಅಥವಾ ಬಟ್ಟೆ ಬಳಸಿ", "duration": "ನಿರಂತರ"},
+            {"number": 6, "title": "ನೋವು ನಿರ್ವಹಣೆ", "description": "ಐಬುಪ್ರೊಫೆನ್ ನೋವು ನಿವಾರಕ ತೆಗೆದುಕೊಳ್ಳಿ", "duration": "ನಿರ್ದೇಶನದಂತೆ"},
+            {"number": 7, "title": "ವೈದ್ಯಕೀಯ ಸಹಾಯ", "description": "2ನೇ 3ನೇ ಡಿಗ್ರಿ ಸುಡುವಿಕೆಗೆ ವೈದ್ಯರ ಬಳಿ ಹೋಗಿ", "duration": "ಆದಷ್ಟು ಬೇಗ"}
+          ],
+          "warnings": ["ಚರ್ಮದ ಮೇಲೆ ನೇರ ಐಸ್ ಹಾಕಬೇಡಿ", "ಮುಲಾಮು ಅಥವಾ ಎಣ್ಣೆ ಹಾಕಬೇಡಿ", "ಗುಳ್ಳೆ ಒಡೆಯಬೇಡಿ"],
+          "tips": ["ಸೋಂಕು ತಡೆಯಲು ಮುಚ್ಚಿ ಇಡಿ", "ನೀರು ಕುಡಿಯುತ್ತಿರಿ", "ಸಡಿಲ ತಣ್ಣನೆ ಬಟ್ಟೆ ಸಹಾಯ ಮಾಡುತ್ತದೆ"]
+        },
+        "te": {
+          "title": "కాలిన గాయాలు",
+          "description": "వేడి రసాయన మరియు విద్యుత్ కాలిన గాయాలకు చికిత్స",
+          "steps": [
+            {"number": 1, "title": "కాలడం ఆపండి", "description": "వేడి మూలం నుండి తొలగించండి. బట్టలకు మంట అంటుకుంటే ఆగండి పడండి దొర్లండి", "duration": "వెంటనే"},
+            {"number": 2, "title": "చల్లబరచండి", "description": "10-20 నిమిషాలు చల్లని నీటితో చల్లబరచండి. మంచు వద్దు", "duration": "10-20 నిమిషాలు"},
+            {"number": 3, "title": "ఆభరణాలు తీయండి", "description": "వాపు రాకముందే ఉంగరాలు చేతి కడియాలు తీయండి", "duration": "1 నిమిషం"},
+            {"number": 4, "title": "తీవ్రత అంచనా వేయండి", "description": "1వ డిగ్రీ ఎర్రటి చర్మం. 2వ బొబ్బలు. 3వ కాలిన చర్మం", "duration": "చూపు"},
+            {"number": 5, "title": "కాలిన గాయాన్ని కప్పండి", "description": "శుభ్రమైన కట్టు లేదా గుడ్డ వాడండి", "duration": "నిరంతరం"},
+            {"number": 6, "title": "నొప్పి నివారణ", "description": "ఇబుప్రోఫెన్ వంటి నొప్పి నివారణ మాత్ర తీసుకోండి", "duration": "నిర్దేశం ప్రకారం"},
+            {"number": 7, "title": "వైద్య సహాయం", "description": "2వ 3వ డిగ్రీ కాలిన గాయాలకు డాక్టర్ దగ్గరికి వెళ్ళండి", "duration": "వీలైనంత తొందరగా"}
+          ],
+          "warnings": ["చర్మంపై నేరుగా మంచు వేయవద్దు", "మందులు లేదా నూనె రాయవద్దు", "బొబ్బలు పగులగొట్టవద్దు"],
+          "tips": ["తొంచు నివారణకు కప్పి ఉంచండి", "నీరు ఎక్కువగా తాగండి", "వదులైన చల్లని బట్టలు సహాయపడతాయి"]
+        },
+        "ml": {
+          "title": "പൊള്ളലേൽക്കൽ",
+          "description": "ചൂട് രാസ വൈദ്യുതി പൊള്ളലുകൾ ചികിത്സിക്കുക",
+          "steps": [
+            {"number": 1, "title": "പൊള്ളൽ നിർത്തുക", "description": "ചൂടിൽ നിന്ന് മാറ്റുക. വസ്ത്രം കത്തുന്നെങ്കിൽ നിർത്തുക വീഴുക ഉരുളുക", "duration": "ഉടൻ"},
+            {"number": 2, "title": "തണുപ്പിക്കുക", "description": "10-20 മിനിറ്റ് തണുത്ത ഒഴുകുന്ന വെള്ളം ഉപയോഗിക്കുക. ഐസ് വേണ്ട", "duration": "10-20 മിനിറ്റ്"},
+            {"number": 3, "title": "ആഭരണം നീക്കുക", "description": "നീർക്കെട്ടുണ്ടാകുന്നതിന് മുൻപ് മോതിരം വളകൾ നീക്കുക", "duration": "1 മിനിറ്റ്"},
+            {"number": 4, "title": "തീവ്രത വിലയിരുത്തുക", "description": "1ാം ഡിഗ്രി ചുവന്ന ചർമ്മം. 2ാം ഒഴുമ്പ്. 3ാം കരിഞ്ഞ ചർമ്മം", "duration": "ദൃശ്യ"},
+            {"number": 5, "title": "മൂടുക", "description": "ശുദ്ധമായ വസ്ത്രം ഉപയോഗിക്കുക", "duration": "തുടർച്ചയായി"},
+            {"number": 6, "title": "വേദന നിർവ്വഹണം", "description": "ഐബുപ്രോഫെൻ വേദനസംഹാരി കഴിക്കുക", "duration": "നിർദ്ദേശം അനുസരിച്ച്"},
+            {"number": 7, "title": "വൈദ്യ സഹായം", "description": "2ാം 3ാം ഡിഗ്രി പൊള്ളലിന് ഡോക്ടറെ കാണുക", "duration": "ഉടൻ"}
+          ],
+          "warnings": ["ചർമ്മത്തിൽ നേരിട്ട് ഐസ് ഇടരുത്", "മരുന്ന് അല്ലെങ്കിൽ എണ്ണ ഇടരുത്", "ഒഴുമ്പ് പൊട്ടിക്കരുത്"],
+          "tips": ["അണുബാധ തടയാൻ മൂടിയിടുക", "ധാരാളം വെള്ളം കുടിക്കുക", "അയഞ്ഞ തണുത്ത വസ്ത്രം സഹായിക്കും"]
+        }
+      }
+    },
+    {
+      "id": "fracture",
+      "icon": "broken_image",
+      "color": 4280853298,
+      "severity": "high",
+      "translations": {
+        "en": {
+          "title": "Fractures and Broken Bones",
+          "description": "Immobilize and stabilize broken bones",
+          "steps": [
+            {"number": 1, "title": "Stop Movement", "description": "Prevent movement of injured area immediately", "duration": "Immediate"},
+            {"number": 2, "title": "Apply Ice", "description": "Wrap ice pack in cloth. Apply for 15-20 minutes every 2-3 hours", "duration": "15-20 minutes"},
+            {"number": 3, "title": "Immobilize the Limb", "description": "Use sling splint or bandage to prevent movement", "duration": "Until medical help"},
+            {"number": 4, "title": "Elevate if Possible", "description": "Raise injured limb above heart to reduce swelling", "duration": "Continuous"},
+            {"number": 5, "title": "Treat for Shock", "description": "Keep person warm and calm", "duration": "Continuous"},
+            {"number": 6, "title": "Get Medical Help", "description": "Call emergency services or go to hospital for X-rays", "duration": "ASAP"}
+          ],
+          "warnings": ["Do not move unnecessarily", "Do not straighten open fractures", "Watch for circulation loss"],
+          "tips": ["RICE Rest Ice Compression Elevation", "Immobilization reduces pain", "Do not give food or drink"]
+        },
+        "hi": {
+          "title": "फ्रैक्चर और टूटी हड्डियां",
+          "description": "टूटी हड्डियों को स्थिर रखें",
+          "steps": [
+            {"number": 1, "title": "हिलना बंद करें", "description": "घायल क्षेत्र को तुरंत हिलने से रोकें", "duration": "तुरंत"},
+            {"number": 2, "title": "बर्फ लगाएं", "description": "कपड़े में बर्फ लपेटकर लगाएं। हर 2-3 घंटे में 15-20 मिनट", "duration": "15-20 मिनट"},
+            {"number": 3, "title": "अंग स्थिर करें", "description": "स्लिंग या पट्टी से स्थिर करें", "duration": "चिकित्सा सहायता तक"},
+            {"number": 4, "title": "ऊंचा उठाएं", "description": "सूजन कम करने के लिए हृदय से ऊपर उठाएं", "duration": "लगातार"},
+            {"number": 5, "title": "सदमे का उपचार", "description": "व्यक्ति को गर्म और शांत रखें", "duration": "लगातार"},
+            {"number": 6, "title": "चिकित्सा सहायता लें", "description": "एक्स-रे के लिए अस्पताल जाएं", "duration": "जल्द से जल्द"}
+          ],
+          "warnings": ["अनावश्यक न हिलाएं", "खुले फ्रैक्चर को सीधा न करें", "रक्त संचार पर ध्यान दें"],
+          "tips": ["RICE आराम बर्फ दबाव ऊंचाई", "स्थिरीकरण से दर्द कम होता है", "खाना या पानी न दें"]
+        },
+        "ta": {
+          "title": "எலும்பு முறிவு",
+          "description": "முறிந்த எலும்புகளை நிலைப்படுத்துங்கள்",
+          "steps": [
+            {"number": 1, "title": "அசைவை நிறுத்துங்கள்", "description": "காயமடைந்த பகுதியை உடனே அசைக்காதீர்கள்", "duration": "உடனடியாக"},
+            {"number": 2, "title": "பனிக்கட்டி வையுங்கள்", "description": "துணியில் சுற்றிய பனிக்கட்டி வையுங்கள்", "duration": "15-20 நிமிடங்கள்"},
+            {"number": 3, "title": "உறுப்பை நிலைப்படுத்துங்கள்", "description": "கட்டு பயன்படுத்துங்கள்", "duration": "மருத்துவ உதவி வரும் வரை"},
+            {"number": 4, "title": "உயரமாக வையுங்கள்", "description": "வீக்கத்தை குறைக்க இதயத்திற்கு மேலே வையுங்கள்", "duration": "தொடர்ச்சியாக"},
+            {"number": 5, "title": "அதிர்ச்சிக்கு சிகிச்சை", "description": "நபரை சூடாகவும் அமைதியாகவும் வையுங்கள்", "duration": "தொடர்ச்சியாக"},
+            {"number": 6, "title": "மருத்துவ உதவி", "description": "X-ray எடுக்க மருத்துவமனை செல்லுங்கள்", "duration": "விரைவில்"}
+          ],
+          "warnings": ["தேவையின்றி அசைக்காதீர்கள்", "திறந்த முறிவுகளை நேராக்காதீர்கள்", "இரத்த ஓட்டத்தை கவனியுங்கள்"],
+          "tips": ["RICE ஓய்வு பனிக்கட்டி அழுத்தம் உயரம்", "நிலைப்படுத்துதல் வலியை குறைக்கிறது", "உணவு தண்ணீர் கொடுக்காதீர்கள்"]
+        },
+        "kn": {
+          "title": "ಮುರಿತ ಮತ್ತು ಮೂಳೆ ಮುರಿಯುವಿಕೆ",
+          "description": "ಮುರಿದ ಮೂಳೆಗಳನ್ನು ಸ್ಥಿರಗೊಳಿಸಿ",
+          "steps": [
+            {"number": 1, "title": "ಚಲನೆ ನಿಲ್ಲಿಸಿ", "description": "ಗಾಯಗೊಂಡ ಭಾಗವನ್ನು ತಕ್ಷಣ ಅಲ್ಲಾಡಿಸಬೇಡಿ", "duration": "ತಕ್ಷಣ"},
+            {"number": 2, "title": "ಐಸ್ ಹಾಕಿ", "description": "ಬಟ್ಟೆಯಲ್ಲಿ ಐಸ್ ಸುತ್ತಿ ಹಾಕಿ", "duration": "15-20 ನಿಮಿಷ"},
+            {"number": 3, "title": "ಅಂಗ ಸ್ಥಿರಗೊಳಿಸಿ", "description": "ಸ್ಲಿಂಗ್ ಅಥವಾ ಬ್ಯಾಂಡೇಜ್ ಬಳಸಿ", "duration": "ವೈದ್ಯಕೀಯ ಸಹಾಯ ತನಕ"},
+            {"number": 4, "title": "ಎತ್ತರಕ್ಕೆ ಇರಿಸಿ", "description": "ಊತ ಕಡಿಮೆ ಮಾಡಲು ಹೃದಯಕ್ಕಿಂತ ಎತ್ತರ ಇರಿಸಿ", "duration": "ನಿರಂತರ"},
+            {"number": 5, "title": "ಆಘಾತ ಚಿಕಿತ್ಸೆ", "description": "ವ್ಯಕ್ತಿಯನ್ನು ಬೆಚ್ಚಗೆ ಮತ್ತು ಶಾಂತವಾಗಿ ಇರಿಸಿ", "duration": "ನಿರಂತರ"},
+            {"number": 6, "title": "ವೈದ್ಯಕೀಯ ಸಹಾಯ", "description": "ಎಕ್ಸ್-ರೇ ತೆಗೆಯಲು ಆಸ್ಪತ್ರೆಗೆ ಹೋಗಿ", "duration": "ಆದಷ್ಟು ಬೇಗ"}
+          ],
+          "warnings": ["ಅನಾವಶ್ಯಕ ಅಲ್ಲಾಡಿಸಬೇಡಿ", "ತೆರೆದ ಮುರಿತ ನೇರ ಮಾಡಬೇಡಿ", "ರಕ್ತ ಪರಿಚಲನೆ ಗಮನಿಸಿ"],
+          "tips": ["RICE ವಿಶ್ರಾಂತಿ ಐಸ್ ಒತ್ತಡ ಎತ್ತರ", "ಸ್ಥಿರಗೊಳಿಸುವಿಕೆ ನೋವು ಕಡಿಮೆ ಮಾಡುತ್ತದೆ", "ಆಹಾರ ಅಥವಾ ನೀರು ಕೊಡಬೇಡಿ"]
+        },
+        "te": {
+          "title": "విరిగిన ఎముకలు",
+          "description": "విరిగిన ఎముకలను స్థిరపరచండి",
+          "steps": [
+            {"number": 1, "title": "కదలిక ఆపండి", "description": "గాయపడిన ప్రదేశాన్ని వెంటనే కదిలించవద్దు", "duration": "వెంటనే"},
+            {"number": 2, "title": "మంచు వేయండి", "description": "గుడ్డలో మంచు చుట్టి వేయండి", "duration": "15-20 నిమిషాలు"},
+            {"number": 3, "title": "అంగాన్ని స్థిరపరచండి", "description": "స్లింగ్ లేదా కట్టు వాడండి", "duration": "వైద్య సహాయం వచ్చే వరకు"},
+            {"number": 4, "title": "పైకి ఎత్తండి", "description": "వాపు తగ్గించడానికి గుండె కంటే ఎత్తులో ఉంచండి", "duration": "నిరంతరం"},
+            {"number": 5, "title": "షాక్ చికిత్స", "description": "వ్యక్తిని వెచ్చగా మరియు శాంతంగా ఉంచండి", "duration": "నిరంతరం"},
+            {"number": 6, "title": "వైద్య సహాయం", "description": "X-రే తీసుకోవడానికి ఆసుపత్రికి వెళ్ళండి", "duration": "వీలైనంత తొందరగా"}
+          ],
+          "warnings": ["అనవసరంగా కదిలించవద్దు", "బహిరంగ విరుగులను సరిచేయవద్దు", "రక్త ప్రసరణ గమనించండి"],
+          "tips": ["RICE విశ్రాంతి మంచు ఒత్తిడి ఎత్తు", "స్థిరపరచడం నొప్పిని తగ్గిస్తుంది", "తిండి లేదా నీరు ఇవ్వవద్దు"]
+        },
+        "ml": {
+          "title": "ഒടിവ് ഒടിഞ്ഞ എലുകൾ",
+          "description": "ഒടിഞ്ഞ എലുകൾ സ്ഥിരപ്പെടുത്തുക",
+          "steps": [
+            {"number": 1, "title": "ചലനം നിർത്തുക", "description": "പരിക്കേറ്റ ഭാഗം ഉടൻ അനക്കാതിരിക്കുക", "duration": "ഉടൻ"},
+            {"number": 2, "title": "ഐസ് ഇടുക", "description": "തുണിയിൽ ഐസ് പൊതിഞ്ഞ് ഇടുക", "duration": "15-20 മിനിറ്റ്"},
+            {"number": 3, "title": "അവയവം ഉറപ്പിക്കുക", "description": "സ്ലിംഗ് അല്ലെങ്കിൽ ബാൻഡേജ് ഉപയോഗിക്കുക", "duration": "വൈദ്യ സഹായം വരുന്നത് വരെ"},
+            {"number": 4, "title": "ഉയർത്തിപ്പിടിക്കുക", "description": "നീർക്കെട്ട് കുറയ്ക്കാൻ ഹൃദയത്തിനു മുകളിൽ ഉയർത്തുക", "duration": "തുടർച്ചയായി"},
+            {"number": 5, "title": "ഷോക്ക് ചികിത്സ", "description": "വ്യക്തിയെ ഊഷ്മളവും ശാന്തവുമായ നിലയിൽ നിർത്തുക", "duration": "തുടർച്ചയായി"},
+            {"number": 6, "title": "വൈദ്യ സഹായം", "description": "X-Ray എടുക്കാൻ ആശുപത്രിയിൽ പോകുക", "duration": "ഉടൻ"}
+          ],
+          "warnings": ["അനാവശ്യമായി ചലിപ്പിക്കരുത്", "തുറന്ന ഒടിവ് നേരെ ആക്കരുത്", "രക്തചംക്രമണം ശ്രദ്ധിക്കുക"],
+          "tips": ["RICE വിശ്രാന്തി ഐസ് മർദ്ദം ഉയർത്തൽ", "ഉറപ്പിക്കൽ വേദന കുറയ്ക്കും", "ഭക്ഷണം വെള്ളം കൊടുക്കരുത്"]
+        }
+      }
+    }
+  ]
+}
