@@ -14,23 +14,28 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const[
-    HomeScreen(),
-    ChatScreen(),
-    SOSScreen(),
-    FirstAidScreen(),
-  ];
-
-  void _onTabTapped(int index) {
+  // ── Switch tab from anywhere ──────────────────────────────────────
+  void _switchTab(int index) {
     setState(() => _currentIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Pass the switchTab callback to HomeScreen
+    final List<Widget> screens = [
+      HomeScreen(onTabSwitch: _switchTab),
+      const ChatScreen(),
+      const SOSScreen(),
+      const FirstAidScreen(),
+    ];
+
     return Scaffold(
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 250),
-        child: _screens[_currentIndex],
+        child: KeyedSubtree(
+          key: ValueKey(_currentIndex),
+          child: screens[_currentIndex],
+        ),
       ),
       bottomNavigationBar: _buildBottomNav(),
     );
@@ -49,7 +54,7 @@ class _MainShellState extends State<MainShell> {
       ),
       child: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: _onTabTapped,
+        onTap: _switchTab,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),

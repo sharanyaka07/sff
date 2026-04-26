@@ -9,30 +9,36 @@ import 'package:permission_handler/permission_handler.dart';
 import 'about_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final void Function(int)? onTabSwitch;
+
+  const HomeScreen({super.key, this.onTabSwitch});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
- @override
-void initState() {
-  super.initState();
-  WidgetsBinding.instance.addPostFrameCallback((_) async {
-    // Request notification permission (Android 13+)
-    await Permission.notification.request();
-    // Refresh dashboard
-    if (mounted) {
-      context.read<HomeController>().loadDashboard();
-    }
-  });
-}
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Permission.notification.request();
+      if (mounted) {
+        context.read<HomeController>().loadDashboard();
+      }
+    });
+  }
+
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Good Morning';
     if (hour < 17) return 'Good Afternoon';
     return 'Good Evening';
+  }
+
+  // ── Fixed: uses widget.onTabSwitch callback ───────────────────────
+  void _switchTab(int index) {
+    widget.onTabSwitch?.call(index);
   }
 
   @override
@@ -55,7 +61,7 @@ void initState() {
                       const SizedBox(height: 16),
                       _buildStatsRow(home, sos),
                       const SizedBox(height: 16),
-                      _buildSOSShortcut(context, sos),
+                      _buildSOSShortcut(sos),
                       const SizedBox(height: 16),
                       _buildQuickActions(context),
                       const SizedBox(height: 16),
@@ -172,8 +178,7 @@ void initState() {
 
     if (isConnected) {
       statusColor = AppColors.success;
-      statusText =
-          '${bt.connectedDevices.length} device(s) connected';
+      statusText = '${bt.connectedDevices.length} device(s) connected';
       statusIcon = Icons.bluetooth_connected;
     } else if (isScanning) {
       statusColor = AppColors.warning;
@@ -224,10 +229,7 @@ void initState() {
                   ),
                   Text(
                     statusText,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: statusColor,
-                    ),
+                    style: TextStyle(fontSize: 13, color: statusColor),
                   ),
                 ],
               ),
@@ -239,7 +241,7 @@ void initState() {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             else
-               const Icon(
+              const Icon(
                 Icons.arrow_forward_ios,
                 size: 14,
                 color: AppColors.textHint,
@@ -329,84 +331,90 @@ void initState() {
     );
   }
 
-  // ── SOS Shortcut ─────────────────────────────────────────────────
-  Widget _buildSOSShortcut(BuildContext context, SosController sos) {
+  // ── SOS Shortcut (tappable → goes to SOS tab) ────────────────────
+  Widget _buildSOSShortcut(SosController sos) {
     final isActive = sos.state == SosState.active;
     final isCountdown = sos.state == SosState.countdown;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-  colors: [
-    AppColors.danger,
-    AppColors.dangerDark,
-  ],
-),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.danger.withValues(alpha: 0.35),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
+    return GestureDetector(
+      onTap: () => _switchTab(2),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [AppColors.danger, AppColors.dangerDark],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.warning_amber_rounded,
-            color: Colors.white,
-            size: 40,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isActive
-                      ? '🆘 SOS IS ACTIVE'
-                      : isCountdown
-                          ? '⏳ Countdown: ${sos.countdown}s'
-                          : 'Emergency SOS',
-                  style: const TextStyle(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.danger.withValues(alpha: 0.35),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.white,
+              size: 40,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isActive
+                        ? '🆘 SOS IS ACTIVE'
+                        : isCountdown
+                            ? '⏳ Countdown: ${sos.countdown}s'
+                            : 'Emergency SOS',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
+                    ),
+                  ),
+                  Text(
+                    isActive
+                        ? 'Help is on the way'
+                        : 'Tap to go to SOS screen',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isActive)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'ACTIVE',
+                  style: TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
                 ),
-                Text(
-                  isActive
-                      ? 'Help is on the way'
-                      : 'Go to SOS tab to activate',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (isActive)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(20),
+              )
+            else
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.white54,
+                size: 16,
               ),
-              child: const Text(
-                'ACTIVE',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -428,6 +436,7 @@ void initState() {
         const SizedBox(height: 10),
         Row(
           children: [
+            // Scan Devices → triggers BT scan directly
             Expanded(
               child: _buildActionButton(
                 icon: Icons.bluetooth,
@@ -438,33 +447,33 @@ void initState() {
               ),
             ),
             const SizedBox(width: 10),
+            // First Aid → tab 3
             Expanded(
               child: _buildActionButton(
                 icon: Icons.medical_services_outlined,
                 label: 'First\nAid',
                 color: AppColors.success,
-                onTap: () {
-                  // Switch to First Aid tab (index 3)
-                  _switchTab(context, 3);
-                },
+                onTap: () => _switchTab(3),
               ),
             ),
             const SizedBox(width: 10),
+            // Chat → tab 1
             Expanded(
               child: _buildActionButton(
                 icon: Icons.chat_bubble_outline,
                 label: 'Open\nChat',
                 color: AppColors.primary,
-                onTap: () => _switchTab(context, 1),
+                onTap: () => _switchTab(1),
               ),
             ),
             const SizedBox(width: 10),
+            // Emergency Contacts → tab 2 (SOS tab)
             Expanded(
               child: _buildActionButton(
                 icon: Icons.contacts_outlined,
                 label: 'Emergency\nContacts',
                 color: AppColors.danger,
-                onTap: () => _switchTab(context, 2),
+                onTap: () => _switchTab(2),
               ),
             ),
           ],
@@ -541,14 +550,14 @@ void initState() {
                 Icon(Icons.check_circle_outline,
                     size: 36, color: AppColors.success),
                 SizedBox(height: 8),
-       Text(
+                Text(
                   'No SOS alerts sent',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: AppColors.textSecondary,
                   ),
                 ),
-               Text(
+                Text(
                   'You\'re safe! 🙏',
                   style: TextStyle(
                     fontSize: 12,
@@ -661,13 +670,5 @@ void initState() {
         ],
       ),
     );
-  }
-
-  // ── Tab Switch Helper ────────────────────────────────────────────
-  void _switchTab(BuildContext context, int index) {
-    // Find the MainShell and switch tab
-    // This works because MainShell rebuilds based on _currentIndex
-    // We navigate by popping to root if needed
-    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 }

@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/services/emergency_contacts_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/local/models/emergency_contact_model.dart';
+import 'contact_picker_screen.dart';
 
 class EmergencyContactsScreen extends StatefulWidget {
   const EmergencyContactsScreen({super.key});
@@ -76,6 +77,18 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
     }
   }
 
+  // ── Refresh after returning from contact picker ───────────────────
+  Future<void> _openContactPicker() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ContactPickerScreen(),
+      ),
+    );
+    // Reload contacts in case new ones were added
+    await _loadContacts();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,6 +96,13 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
         backgroundColor: AppColors.danger,
         title: const Text('Emergency Contacts'),
         actions: [
+          // ── Import from phone contacts ───────────────────────────
+          IconButton(
+            icon: const Icon(Icons.contacts),
+            onPressed: _openContactPicker,
+            tooltip: 'Import from phone',
+          ),
+          // ── Add manually ─────────────────────────────────────────
           IconButton(
             icon: const Icon(Icons.person_add),
             onPressed: _addContact,
@@ -176,12 +196,26 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: _addContact,
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.danger),
-            icon: const Icon(Icons.person_add),
-            label: const Text('Add First Contact'),
+          // Two buttons — manual add and import from phone
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton.icon(
+                onPressed: _addContact,
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.danger),
+                icon: const Icon(Icons.person_add),
+                label: const Text('Add Manually'),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton.icon(
+                onPressed: _openContactPicker,
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary),
+                icon: const Icon(Icons.contacts),
+                label: const Text('From Phone'),
+              ),
+            ],
           ),
         ],
       ),
@@ -337,7 +371,6 @@ class _AddContactDialogState extends State<_AddContactDialog> {
             ),
           ),
           const SizedBox(height: 12),
-          // Fixed: use initialValue instead of value
           DropdownButtonFormField<String>(
             initialValue: _selectedRelation,
             decoration: const InputDecoration(

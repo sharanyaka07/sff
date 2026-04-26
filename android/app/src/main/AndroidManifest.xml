@@ -29,6 +29,8 @@
     <!-- Vibration -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
+
     <!-- BLE hardware feature -->
     <uses-feature
         android:name="android.hardware.bluetooth_le"

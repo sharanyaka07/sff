@@ -51,12 +51,15 @@ class BluetoothController extends ChangeNotifier {
   // ── Internal ─────────────────────────────────────────────────────
   final Map<String, BluetoothCharacteristic> _characteristics = {};
   final Set<String> _seenMessageIds = {};
-  final List<int> _buffer = [];
+  // Per-device buffers to avoid mixing packets from different devices
+  final Map<String, List<int>> _deviceBuffers = {};
   StreamSubscription? _scanSubscription;
   StreamSubscription? _adapterStateSubscription;
 
   // ── Init ─────────────────────────────────────────────────────────
   Future<void> initialize() async {
+
+    
     await _loadDeviceIdentity();
     _listenToAdapterState();
     await _loadMessagesFromDb();
@@ -107,6 +110,23 @@ class BluetoothController extends ChangeNotifier {
       AppLogger.error('Failed to load messages from DB', error: e);
     }
   }
+
+  // ── Get best available device name ────────────────────────────────
+  String _getDeviceName(ScanResult result) {
+    // 1. Try advertisement local name (most reliable)
+    final advName = result.advertisementData.advName;
+    if (advName.isNotEmpty) return advName;
+
+    // 2. Try platform name
+    final platformName = result.device.platformName;
+    if (platformName.isNotEmpty) return platformName;
+
+    // 3. Fall back to MAC address
+    return result.device.remoteId.str;
+  }
+
+  // Public getter for UI to use same logic
+  String getDisplayName(ScanResult result) => _getDeviceName(result);
 
   // ── Scanning ─────────────────────────────────────────────────────
   Future<void> startScan() async {
@@ -176,16 +196,15 @@ class BluetoothController extends ChangeNotifier {
               _scanResults.add(result);
               changed = true;
 
-              final name = result.device.platformName.isNotEmpty
-                  ? result.device.platformName
-                  : 'Unknown Device';
+              // FIX: Use _getDeviceName for proper name resolution
+              final name = _getDeviceName(result);
 
               AppLogger.bluetooth(
                 'Found: $name (${result.device.remoteId}) '
                 'RSSI: ${result.rssi}',
               );
 
-              // ── Notify user a device is nearby ──────────────────
+              // Notify user a device is nearby
               NotificationService.showBluetoothDeviceFound(
                 deviceName: name,
                 deviceCount: _scanResults.length,
@@ -227,17 +246,60 @@ class BluetoothController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Connecting ───────────────────────────────────────────────────
+  // ── Connecting (with retry logic) ────────────────────────────────
   Future<bool> connectToDevice(BluetoothDevice device) async {
     try {
       _setState(BtConnectionState.connecting);
       AppLogger.bluetooth('Connecting to ${device.platformName}...');
 
-      await device.connect(timeout: const Duration(seconds: 10));
+      // Disconnect first if already connected
+      if (device.isConnected) {
+        await device.disconnect();
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
 
-      final services = await device.discoverServices();
+      // Connect with retry — up to 3 attempts
+      bool connected = false;
+      for (int attempt = 1; attempt <= 3; attempt++) {
+        try {
+          await device.connect(
+            timeout: const Duration(seconds: 15),
+            autoConnect: false,
+          );
+          connected = true;
+          AppLogger.bluetooth('Connected on attempt $attempt ✅');
+          break;
+        } catch (e) {
+          AppLogger.warning('Attempt $attempt failed: $e');
+          if (attempt < 3) {
+            await Future.delayed(Duration(seconds: attempt));
+          }
+        }
+      }
+
+      if (!connected) {
+        _setState(BtConnectionState.idle);
+        return false;
+      }
+
+      // Wait for connection to stabilize
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // Discover services with retry
+      List<BluetoothService> services = [];
+      for (int i = 0; i < 3; i++) {
+        try {
+          services = await device.discoverServices();
+          if (services.isNotEmpty) break;
+          await Future.delayed(const Duration(milliseconds: 500));
+        } catch (e) {
+          AppLogger.warning('Service discovery attempt ${i + 1} failed');
+        }
+      }
+
       AppLogger.bluetooth('Discovered ${services.length} services');
 
+      bool characteristicFound = false;
       for (final service in services) {
         if (service.uuid.toString().toLowerCase().contains('12345678')) {
           for (final characteristic in service.characteristics) {
@@ -247,27 +309,44 @@ class BluetoothController extends ChangeNotifier {
                 .contains('abcd1234')) {
               _characteristics[device.remoteId.str] = characteristic;
 
-              await characteristic.setNotifyValue(true);
-              characteristic.lastValueStream.listen((value) {
-                if (value.isNotEmpty) {
-                  _onDataReceived(value, device);
-                }
-              });
+              // Enable notifications if supported
+              if (characteristic.properties.notify) {
+                await characteristic.setNotifyValue(true);
+                characteristic.lastValueStream.listen((value) {
+                  if (value.isNotEmpty) {
+                    _onDataReceived(value, device);
+                  }
+                });
+              }
 
-              AppLogger.bluetooth('Characteristic subscribed ✅');
+              characteristicFound = true;
+              AppLogger.bluetooth('Characteristic found ✅');
+              break;
             }
           }
         }
+        if (characteristicFound) break;
       }
 
       _connectedDevices.add(device);
       _setState(BtConnectionState.connected);
 
+      // Listen for disconnection + auto-reconnect
       device.connectionState.listen((connectionState) {
         if (connectionState == BluetoothConnectionState.disconnected) {
           _connectedDevices.remove(device);
           _characteristics.remove(device.remoteId.str);
+          _deviceBuffers.remove(device.remoteId.str);
           AppLogger.bluetooth('Disconnected: ${device.platformName}');
+
+          // Auto-reconnect after 3 seconds
+          Future.delayed(const Duration(seconds: 3), () {
+            if (!_connectedDevices.contains(device)) {
+              AppLogger.bluetooth('Attempting auto-reconnect...');
+              connectToDevice(device);
+            }
+          });
+
           if (_connectedDevices.isEmpty) {
             _setState(BtConnectionState.idle);
           }
@@ -289,6 +368,7 @@ class BluetoothController extends ChangeNotifier {
     await device.disconnect();
     _connectedDevices.remove(device);
     _characteristics.remove(device.remoteId.str);
+    _deviceBuffers.remove(device.remoteId.str);
     if (_connectedDevices.isEmpty) _setState(BtConnectionState.idle);
     notifyListeners();
   }
@@ -334,7 +414,10 @@ class BluetoothController extends ChangeNotifier {
         );
         anySent = true;
       } catch (e) {
-        AppLogger.error('Send failed to ${device.platformName}', error: e);
+        AppLogger.error(
+          'Send failed to ${device.platformName}',
+          error: e,
+        );
       }
     }
 
@@ -349,29 +432,46 @@ class BluetoothController extends ChangeNotifier {
     return anySent;
   }
 
+  // ── Write in chunks with MTU negotiation ─────────────────────────
   Future<void> _writeInChunks(
     BluetoothCharacteristic characteristic,
     List<int> bytes,
   ) async {
-    const chunkSize = 20;
+    // Negotiate larger MTU for faster transfer
+    int chunkSize = 180; // safe default for most devices
+    try {
+      final mtu = await characteristic.device.requestMtu(512);
+      chunkSize = mtu - 3; // subtract ATT protocol overhead
+      AppLogger.bluetooth('MTU negotiated: $mtu, chunk: $chunkSize');
+    } catch (_) {
+      AppLogger.bluetooth('MTU negotiation failed, using default 180');
+    }
+
     for (int i = 0; i < bytes.length; i += chunkSize) {
       final end =
           (i + chunkSize < bytes.length) ? i + chunkSize : bytes.length;
       final chunk = bytes.sublist(i, end);
-      await characteristic.write(chunk, withoutResponse: true);
-      await Future.delayed(const Duration(milliseconds: 30));
+      await characteristic.write(chunk, withoutResponse: false);
+      await Future.delayed(const Duration(milliseconds: 50));
     }
   }
 
-  // ── Receiving Messages ───────────────────────────────────────────
+  // ── Receiving Messages (per-device buffer) ────────────────────────
   void _onDataReceived(List<int> value, BluetoothDevice fromDevice) {
-    _buffer.addAll(value);
+    // Use per-device buffer to avoid mixing packets
+    final deviceId = fromDevice.remoteId.str;
+    _deviceBuffers[deviceId] ??= [];
+    _deviceBuffers[deviceId]!.addAll(value);
 
     try {
-      final jsonStr = utf8.decode(_buffer);
+      final jsonStr = utf8.decode(_deviceBuffers[deviceId]!);
+      final trimmed = jsonStr.trim();
 
-      if (jsonStr.trim().startsWith('{') && jsonStr.trim().endsWith('}')) {
-        final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+      // Only process when we have a complete JSON object
+      if (_isCompleteJson(trimmed)) {
+        _deviceBuffers[deviceId]!.clear();
+
+        final map = jsonDecode(trimmed) as Map<String, dynamic>;
         final isEncrypted = map['isEncrypted'] as bool? ?? false;
         String? decryptedContent;
 
@@ -382,7 +482,7 @@ class BluetoothController extends ChangeNotifier {
         }
 
         final message = MessageModel.fromJson(
-          jsonStr,
+          trimmed,
           isMe: false,
           decryptedContent: decryptedContent,
         );
@@ -398,7 +498,7 @@ class BluetoothController extends ChangeNotifier {
             'Received from ${message.senderName}: ${message.content}',
           );
 
-          // ── Show notification ────────────────────────────────────
+          // Show notification
           if (message.type == MessageType.sos ||
               message.content.contains('🆘')) {
             NotificationService.showSosAlert(
@@ -416,12 +516,30 @@ class BluetoothController extends ChangeNotifier {
           notifyListeners();
           _relayMessage(message, fromDevice);
         }
-
-        _buffer.clear();
       }
+      // else: JSON incomplete, keep buffering
     } catch (_) {
-      // Buffer incomplete
+      // Not valid UTF-8 yet — keep buffering
     }
+  }
+
+  // ── Check if JSON string is complete (balanced braces) ───────────
+  bool _isCompleteJson(String str) {
+    if (!str.startsWith('{')) return false;
+    int depth = 0;
+    bool inString = false;
+    for (int i = 0; i < str.length; i++) {
+      final ch = str[i];
+      if (ch == '"' && (i == 0 || str[i - 1] != '\\')) {
+        inString = !inString;
+      }
+      if (!inString) {
+        if (ch == '{') depth++;
+        if (ch == '}') depth--;
+      }
+      if (depth == 0 && i > 0) return true;
+    }
+    return false;
   }
 
   // ── Message Relay ────────────────────────────────────────────────
@@ -487,6 +605,7 @@ class BluetoothController extends ChangeNotifier {
   void clearMessages() {
     _messages.clear();
     _seenMessageIds.clear();
+    _deviceBuffers.clear();
     DbHelper.clearMessages();
     notifyListeners();
   }

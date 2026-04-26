@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../../../core/theme/app_theme.dart';
+import 'firstaid_chatbot_screen.dart';
 
 class FirstAidScreen extends StatefulWidget {
   const FirstAidScreen({super.key});
@@ -15,7 +16,6 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
   List<dynamic> _filtered = [];
   bool _loading = true;
   String _selectedLang = 'en';
-
 
   final Map<String, String> _languages = {
     'en': 'English',
@@ -54,10 +54,8 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
       } else {
         _filtered = _guides.where((g) {
           final t = g['translations'][_selectedLang];
-          final title =
-              (t['title'] as String).toLowerCase();
-          final desc =
-              (t['description'] as String).toLowerCase();
+          final title = (t['title'] as String).toLowerCase();
+          final desc = (t['description'] as String).toLowerCase();
           return title.contains(query.toLowerCase()) ||
               desc.contains(query.toLowerCase());
         }).toList();
@@ -91,6 +89,19 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.success,
         title: const Text('First Aid Guide'),
+        // ── Chatbot button added here ────────────────────────────
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.smart_toy, color: Colors.white),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const FirstAidChatbotScreen(),
+              ),
+            ),
+            tooltip: 'First Aid Bot',
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(110),
           child: Column(
@@ -190,8 +201,7 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
                               color: color.withValues(alpha: 0.3)),
                           boxShadow: [
                             BoxShadow(
-                              color:
-                                  Colors.black.withValues(alpha: 0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
