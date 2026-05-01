@@ -11,6 +11,7 @@ import '../../../data/local/database/db_helper.dart';
 import '../../../data/local/models/sos_log_model.dart';
 import '../../bluetooth/controllers/bluetooth_controller.dart';
 import '../../chat/controllers/chat_controller.dart';
+import '../../../core/services/ble_broadcast_service.dart';
 
 enum SosState {
   idle,
@@ -131,16 +132,21 @@ class SosController extends ChangeNotifier {
 
     _statusMessage = 'Sending SOS alert...';
     notifyListeners();
-
-    // Step 3: Send via all channels simultaneously
-    await Future.wait([
-      _sendViaBluetooth(sosMessage),
-      _sendViaOnline(sosMessage),
-      _sendAllSMS(
-        userName: userName,
-        locationText: locationText,
-      ),
-    ]);
+// Step 3: Send via all channels simultaneously
+await Future.wait([
+  _sendViaBluetooth(sosMessage),
+  _sendViaOnline(sosMessage),
+  _sendAllSMS(
+    userName: userName,
+    locationText: locationText,
+  ),
+  // ── NEW: Broadcast SOS via BLE advertisement (no pairing needed)
+  _broadcastViaBLE(
+    userName: userName,
+    latitude: _lastPosition?.latitude,
+    longitude: _lastPosition?.longitude,
+  ),
+]);
 
     // Step 4: Save SOS log to database
     final log = SosLog.create(
@@ -168,6 +174,32 @@ class SosController extends ChangeNotifier {
       'SMS: $_smsSentCount contacts',
     );
   }
+
+// ── BLE Advertisement Broadcast (no connection needed) ────────────
+Future<void> _broadcastViaBLE({
+  required String userName,
+  required double? latitude,
+  required double? longitude,
+}) async {
+  try {
+    final result = await BleBroadcastService.broadcastSOS(
+      userName: userName,
+      latitude: latitude,
+      longitude: longitude,
+    );
+
+    AppLogger.sos('BLE advertisement broadcast: $result');
+
+    // Stop broadcasting after 30 seconds
+    if (result) {
+      Future.delayed(const Duration(seconds: 30), () {
+        BleBroadcastService.stopBroadcast();
+      });
+    }
+  } catch (e) {
+    AppLogger.error('BLE broadcast failed', error: e);
+  }
+}
 
   // ── Send via Bluetooth ───────────────────────────────────────────
   Future<void> _sendViaBluetooth(String message) async {
@@ -226,17 +258,18 @@ class SosController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Reset SOS ────────────────────────────────────────────────────
-  void resetSOS() {
-    _countdownTimer?.cancel();
-    _state = SosState.idle;
-    _statusMessage = 'Press and hold to send SOS';
-    _smsSent = false;
-    _bluetoothSent = false;
-    _onlineSent = false;
-    _smsSentCount = 0;
-    notifyListeners();
-  }
+ void resetSOS() {
+  _countdownTimer?.cancel();
+  _state = SosState.idle;
+  _statusMessage = 'Press and hold to send SOS';
+  _smsSent = false;
+  _bluetoothSent = false;
+  _onlineSent = false;
+  _smsSentCount = 0;
+  // Stop BLE broadcast
+  BleBroadcastService.stopBroadcast();
+  notifyListeners();
+}
 
   @override
   void dispose() {

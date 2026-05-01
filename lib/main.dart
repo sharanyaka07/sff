@@ -14,6 +14,7 @@ import 'core/services/encryption_service.dart';
 import 'features/home/controllers/home_controller.dart';
 import 'core/services/notification_service.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'core/services/ble_scanner_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +40,9 @@ EncryptionService.initialize();
 
 // Initialize notifications
 await NotificationService.initialize();
+
+// Start listening for SOS broadcasts from nearby devices
+await BleScannerService.startListeningForSOS();
 
 // Remove splash screen
   FlutterNativeSplash.remove();

@@ -10,6 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
 
+# BLE Advertising
+  flutter_ble_peripheral: ^1.0.1
   # Encryption
   encrypt: ^5.0.3
   pointycastle: ^3.9.1
@@ -30,6 +32,7 @@ dependencies:
 
   # Bluetooth
   flutter_blue_plus: ^1.32.12
+  
 
   # Location / GPS
   geolocator: ^11.0.0
@@ -87,3 +90,6 @@ flutter_native_splash:
   android: true
   ios: false
   fullscreen: false
+
+  # BLE Advertising
+  
