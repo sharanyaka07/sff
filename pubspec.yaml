@@ -92,4 +92,4 @@ flutter_native_splash:
   fullscreen: false
 
   # BLE Advertising
-  
+  url_launcher: ^6.3.0

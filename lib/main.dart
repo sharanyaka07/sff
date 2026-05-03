@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/connectivity_service.dart';
 import 'core/utils/logger.dart';
+import 'core/utils/permissions.dart';
 import 'data/remote/firebase/fcm_service.dart';
 import 'features/bluetooth/controllers/bluetooth_controller.dart';
 import 'features/chat/controllers/chat_controller.dart';
@@ -17,11 +18,8 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'core/services/ble_scanner_service.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Correct
-final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -35,16 +33,10 @@ FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
     AppLogger.error('Firebase init failed', tag: 'main', error: e);
   }
 
-  // Initialize encryption
-EncryptionService.initialize();
+  EncryptionService.initialize();
+  await NotificationService.initialize();
+  await BleScannerService.startListeningForSOS();
 
-// Initialize notifications
-await NotificationService.initialize();
-
-// Start listening for SOS broadcasts from nearby devices
-await BleScannerService.startListeningForSOS();
-
-// Remove splash screen
   FlutterNativeSplash.remove();
 
   runApp(
@@ -60,33 +52,23 @@ await BleScannerService.startListeningForSOS();
         ChangeNotifierProvider<FcmService>(
           create: (_) => FcmService(),
         ),
-        ChangeNotifierProxyProvider3<ConnectivityService, BluetoothController,
-            FcmService, ChatController>(
+        ChangeNotifierProxyProvider<BluetoothController, ChatController>(
           create: (context) => ChatController(
-            connectivityService: context.read<ConnectivityService>(),
             bluetoothController: context.read<BluetoothController>(),
-            fcmService: context.read<FcmService>(),
           ),
-          update: (_, connectivity, bluetooth, fcm, previous) =>
-              previous ??
-              ChatController(
-                connectivityService: connectivity,
-                bluetoothController: bluetooth,
-                fcmService: fcm,
-              ),
+          update: (_, bluetooth, previous) =>
+              previous ?? ChatController(bluetoothController: bluetooth),
         ),
-        ChangeNotifierProxyProvider2<BluetoothController, ChatController,
-            SosController>(
-          create: (context) => SosController(
-            bluetoothController: context.read<BluetoothController>(),
-            chatController: context.read<ChatController>(),
-          ),
-          update: (_, bluetooth, chat, previous) =>
-              previous ??
-              SosController(
-                bluetoothController: bluetooth,
-                chatController: chat,
-              ),
+        ChangeNotifierProxyProvider<BluetoothController, SosController>(
+          create: (context) {
+            final ctrl = SosController(
+              bluetoothController: context.read<BluetoothController>(),
+            );
+            ctrl.startMonitoring();
+            return ctrl;
+          },
+          update: (_, bluetooth, previous) =>
+              previous ?? SosController(bluetoothController: bluetooth),
         ),
         ChangeNotifierProvider<HomeController>(
           create: (_) => HomeController(),
@@ -97,19 +79,35 @@ await BleScannerService.startListeningForSOS();
   );
 }
 
-class SafeConnectApp extends StatelessWidget {
+class SafeConnectApp extends StatefulWidget {
   const SafeConnectApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final bt = context.read<BluetoothController>();
-      context.read<FcmService>().initialize(
-            deviceId: bt.deviceId,
-            deviceName: bt.deviceName,
-          );
-    });
+  State<SafeConnectApp> createState() => _SafeConnectAppState();
+}
 
+class _SafeConnectAppState extends State<SafeConnectApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Request all permissions as soon as app starts
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // First request all permissions
+      await AppPermissions.requestAll(context);
+
+      // Then initialize FCM after permissions granted
+      if (mounted) {
+        final bt = context.read<BluetoothController>();
+        context.read<FcmService>().initialize(
+              deviceId: bt.deviceId,
+              deviceName: bt.deviceName,
+            );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Safe Connect',
       debugShowCheckedModeBanner: false,

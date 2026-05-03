@@ -10,8 +10,9 @@ import '../../../core/utils/logger.dart';
 import '../../../data/local/database/db_helper.dart';
 import '../../../data/local/models/sos_log_model.dart';
 import '../../bluetooth/controllers/bluetooth_controller.dart';
-import '../../chat/controllers/chat_controller.dart';
 import '../../../core/services/ble_broadcast_service.dart';
+import '../../../data/remote/firebase/fcm_service.dart';
+import '../../../core/services/connectivity_service.dart';
 
 enum SosState {
   idle,
@@ -23,13 +24,15 @@ enum SosState {
 
 class SosController extends ChangeNotifier {
   final BluetoothController _bluetoothController;
-  final ChatController _chatController;
+
+  // ── ConnectivityService instance (not static) ────────────────────
+  final ConnectivityService _connectivityService = ConnectivityService();
 
   SosController({
     required BluetoothController bluetoothController,
-    required ChatController chatController,
-  })  : _bluetoothController = bluetoothController,
-        _chatController = chatController;
+  }) : _bluetoothController = bluetoothController {
+    _bluetoothController.addListener(_onBluetoothChanged);
+  }
 
   // ── State ────────────────────────────────────────────────────────
   SosState _state = SosState.idle;
@@ -44,18 +47,73 @@ class SosController extends ChangeNotifier {
   String _statusMessage = 'Press and hold to send SOS';
   String get statusMessage => _statusMessage;
 
+  // ── Real send results ────────────────────────────────────────────
   bool _smsSent = false;
   bool _bluetoothSent = false;
   bool _onlineSent = false;
 
   bool get smsSent => _smsSent;
-  bool get bluetoothSent => _bluetoothSent;
   bool get onlineSent => _onlineSent;
+
+  // ── Bluetooth tick — real time ───────────────────────────────────
+  bool get bluetoothSent =>
+      _state == SosState.active
+          ? _bluetoothSent
+          : _bluetoothController.isConnected;
+
+  // ── Internet tick — real time ────────────────────────────────────
+  bool _hasInternet = false;
+  bool get hasInternet => _hasInternet;
+
+  // ── SMS tick — real time: true if contacts exist ─────────────────
+  bool _hasEmergencyContacts = false;
+  bool get hasEmergencyContacts => _hasEmergencyContacts;
 
   int _smsSentCount = 0;
   int get smsSentCount => _smsSentCount;
 
   Timer? _countdownTimer;
+  Timer? _connectivityTimer;
+
+  // ── Init: start polling internet + contacts ──────────────────────
+  void startMonitoring() {
+    _checkInternet();
+    _checkEmergencyContacts();
+    _connectivityTimer = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) {
+        _checkInternet();
+        _checkEmergencyContacts();
+      },
+    );
+  }
+
+  // ── Use instance .isOnline (NOT static) ─────────────────────────
+  Future<void> _checkInternet() async {
+    try {
+      await _connectivityService.checkConnectivity();
+      final connected = _connectivityService.isOnline; // ← instance property
+      if (_hasInternet != connected) {
+        _hasInternet = connected;
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _checkEmergencyContacts() async {
+    try {
+      final contacts = await EmergencyContactsService.getContacts();
+      final hasContacts = contacts.isNotEmpty;
+      if (_hasEmergencyContacts != hasContacts) {
+        _hasEmergencyContacts = hasContacts;
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  void _onBluetoothChanged() {
+    notifyListeners();
+  }
 
   // ── Start SOS Countdown ──────────────────────────────────────────
   void startCountdown() {
@@ -110,7 +168,6 @@ class SosController extends ChangeNotifier {
 
     AppLogger.sos('SOS triggered! Getting location...');
 
-    // Step 1: Get GPS location
     _lastPosition = await LocationService.getCurrentPosition();
     final locationText = _lastPosition != null
         ? LocationService.formatLocationForSOS(_lastPosition!)
@@ -120,7 +177,6 @@ class SosController extends ChangeNotifier {
         ? LocationService.formatShort(_lastPosition!)
         : 'Unknown';
 
-    // Step 2: Get user info
     final userName = await UserPreferences.getUserName();
 
     final sosMessage =
@@ -132,23 +188,20 @@ class SosController extends ChangeNotifier {
 
     _statusMessage = 'Sending SOS alert...';
     notifyListeners();
-// Step 3: Send via all channels simultaneously
-await Future.wait([
-  _sendViaBluetooth(sosMessage),
-  _sendViaOnline(sosMessage),
-  _sendAllSMS(
-    userName: userName,
-    locationText: locationText,
-  ),
-  // ── NEW: Broadcast SOS via BLE advertisement (no pairing needed)
-  _broadcastViaBLE(
-    userName: userName,
-    latitude: _lastPosition?.latitude,
-    longitude: _lastPosition?.longitude,
-  ),
-]);
 
-    // Step 4: Save SOS log to database
+    await Future.wait([
+      _sendViaBluetooth(
+        userName: userName,
+        latitude: _lastPosition?.latitude,
+        longitude: _lastPosition?.longitude,
+      ),
+      _sendViaFirebase(sosMessage),
+      _sendAllSMS(
+        userName: userName,
+        locationText: locationText,
+      ),
+    ]);
+
     final log = SosLog.create(
       userName: userName,
       latitude: _lastPosition?.latitude,
@@ -160,9 +213,8 @@ await Future.wait([
       status: 'sent',
     );
     await DbHelper.insertSosLog(log);
-    AppLogger.sos('SOS log saved to database ✅');
+    AppLogger.sos('SOS log saved ✅');
 
-    // Step 5: Mark as active
     _state = SosState.active;
     _statusMessage = 'SOS ACTIVE — Help is on the way';
     HapticFeedback.heavyImpact();
@@ -175,57 +227,70 @@ await Future.wait([
     );
   }
 
-// ── BLE Advertisement Broadcast (no connection needed) ────────────
-Future<void> _broadcastViaBLE({
-  required String userName,
-  required double? latitude,
-  required double? longitude,
-}) async {
-  try {
-    final result = await BleBroadcastService.broadcastSOS(
-      userName: userName,
-      latitude: latitude,
-      longitude: longitude,
-    );
-
-    AppLogger.sos('BLE advertisement broadcast: $result');
-
-    // Stop broadcasting after 30 seconds
-    if (result) {
-      Future.delayed(const Duration(seconds: 30), () {
-        BleBroadcastService.stopBroadcast();
-      });
-    }
-  } catch (e) {
-    AppLogger.error('BLE broadcast failed', error: e);
-  }
-}
-
   // ── Send via Bluetooth ───────────────────────────────────────────
-  Future<void> _sendViaBluetooth(String message) async {
+  Future<void> _sendViaBluetooth({
+    required String userName,
+    required double? latitude,
+    required double? longitude,
+  }) async {
     try {
-      final result = await _bluetoothController.sendMessage(message);
-      _bluetoothSent = result;
-      AppLogger.bluetooth('SOS via Bluetooth: $result');
+      final bleResult = await BleBroadcastService.broadcastSOS(
+        userName: userName,
+        latitude: latitude,
+        longitude: longitude,
+      );
+
+      if (_bluetoothController.isConnected) {
+        final sosMessage =
+            '🆘 SOS ALERT from $userName!\n'
+            '📍 GPS: ${latitude ?? "unknown"}, ${longitude ?? "unknown"}';
+        await _bluetoothController.sendMessage(sosMessage);
+      }
+
+      _bluetoothSent = bleResult || _bluetoothController.isConnected;
+      AppLogger.sos('SOS Bluetooth: $_bluetoothSent');
+
+      if (bleResult) {
+        Future.delayed(const Duration(seconds: 60), () {
+          BleBroadcastService.stopBroadcast();
+        });
+      }
     } catch (e) {
       AppLogger.error('BT SOS failed', error: e);
+      _bluetoothSent = false;
     }
     notifyListeners();
   }
 
-  // ── Send via Online (Firebase) ───────────────────────────────────
-  Future<void> _sendViaOnline(String message) async {
+  // ── Send via Firebase ────────────────────────────────────────────
+  Future<void> _sendViaFirebase(String message) async {
     try {
-      final result = await _chatController.sendMessage(message);
+      // ← Use instance .isOnline (NOT static)
+      final connected = _connectivityService.isOnline;
+      if (!connected) {
+        _onlineSent = false;
+        AppLogger.sos('No internet — skipping Firebase SOS');
+        notifyListeners();
+        return;
+      }
+
+      final fcmService = FcmService();
+      final result = await fcmService.sendMessageToToken(
+        targetToken: 'broadcast',
+        content: message,
+        senderId: _bluetoothController.deviceId,
+        senderName: _bluetoothController.deviceName,
+      );
       _onlineSent = result;
-      AppLogger.success('SOS via Online: $result');
+      AppLogger.sos('SOS via Firebase: $result');
     } catch (e) {
-      AppLogger.error('Online SOS failed', error: e);
+      AppLogger.error('Firebase SOS failed', error: e);
+      _onlineSent = false;
     }
     notifyListeners();
   }
 
-  // ── Send SMS to ALL Emergency Contacts ───────────────────────────
+  // ── Send SMS ─────────────────────────────────────────────────────
   Future<void> _sendAllSMS({
     required String userName,
     required String locationText,
@@ -234,6 +299,8 @@ Future<void> _broadcastViaBLE({
 
     if (contacts.isEmpty) {
       AppLogger.warning('No emergency contacts saved — skipping SMS');
+      _smsSent = false;
+      notifyListeners();
       return;
     }
 
@@ -252,28 +319,29 @@ Future<void> _broadcastViaBLE({
     _smsSentCount = results.where((r) => r == true).length;
     _smsSent = _smsSentCount > 0;
 
-    AppLogger.sos(
-      'SMS sent to $_smsSentCount/${contacts.length} contacts',
-    );
+    AppLogger.sos('SMS sent to $_smsSentCount/${contacts.length} contacts');
     notifyListeners();
   }
 
- void resetSOS() {
-  _countdownTimer?.cancel();
-  _state = SosState.idle;
-  _statusMessage = 'Press and hold to send SOS';
-  _smsSent = false;
-  _bluetoothSent = false;
-  _onlineSent = false;
-  _smsSentCount = 0;
-  // Stop BLE broadcast
-  BleBroadcastService.stopBroadcast();
-  notifyListeners();
-}
+  // ── Reset SOS ────────────────────────────────────────────────────
+  void resetSOS() {
+    _countdownTimer?.cancel();
+    _state = SosState.idle;
+    _statusMessage = 'Press and hold to send SOS';
+    _smsSent = false;
+    _bluetoothSent = false;
+    _onlineSent = false;
+    _smsSentCount = 0;
+    BleBroadcastService.stopBroadcast();
+    notifyListeners();
+  }
 
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _connectivityTimer?.cancel();
+    _connectivityService.dispose();
+    _bluetoothController.removeListener(_onBluetoothChanged);
     super.dispose();
   }
 }

@@ -59,41 +59,78 @@ class _ChatScreenState extends State<ChatScreen> {
       builder: (context, chat, _) {
         _scrollToBottom();
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Secure Chat'),
-            actions: [
-              IconButton(
-                icon: Stack(
-                  children: [
-                    const Icon(Icons.bluetooth_searching),
-                    if (chat.isBluetoothConnected)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: AppColors.success,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const BluetoothScreen(),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () => _showClearDialog(context, chat),
-              ),
-            ],
+         // ── Replace AppBar in build() ─────────────────────────────────────
+appBar: AppBar(
+  title: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text(
+        'Secure Chat',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+      // ── Show who you're chatting with ─────────────────────────
+      if (chat.recentSenders.isNotEmpty)
+        Text(
+          'Chatting with: ${chat.recentSenders.join(', ')}',
+          style: const TextStyle(
+            fontSize: 11,
+            color: Colors.white70,
+            fontWeight: FontWeight.normal,
           ),
+        )
+      else if (chat.isBluetoothConnected)
+  Text(
+    'Connected to ${chat.connectedDeviceName}',
+    style: const TextStyle(
+      fontSize: 11,
+      color: Colors.white70,
+      fontWeight: FontWeight.normal,
+    ),
+  )
+      else
+        const Text(
+          'Waiting for nearby devices...',
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.white70,
+            fontWeight: FontWeight.normal,
+          ),
+        ),
+    ],
+  ),
+  actions: [
+    IconButton(
+      icon: Stack(
+        children: [
+          const Icon(Icons.bluetooth_searching),
+          if (chat.isBluetoothConnected)
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: AppColors.success,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
+      onPressed: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const BluetoothScreen(),
+        ),
+      ),
+    ),
+    IconButton(
+      icon: const Icon(Icons.delete_outline),
+      onPressed: () => _showClearDialog(context, chat),
+    ),
+  ],
+),
           body: Column(
             children: [
               _buildModeBanner(chat),
@@ -110,74 +147,80 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // ── Mode Banner ──────────────────────────────────────────────────
-  Widget _buildModeBanner(ChatController chat) {
-    Color color;
-    if (chat.isOnline && chat.isBluetoothConnected) {
-      color = AppColors.success;
-    } else if (chat.isOnline) {
-      color = AppColors.primary;
-    } else if (chat.isBluetoothConnected) {
-      color = AppColors.bluetoothActive;
-    } else {
-      color = AppColors.warning;
-    }
+ Widget _buildModeBanner(ChatController chat) {
+  Color color;
+  if (chat.isOnline && chat.isBluetoothConnected) {
+    color = AppColors.success;
+  } else if (chat.isOnline) {
+    color = AppColors.primary;
+  } else if (chat.isBluetoothConnected) {
+    color = AppColors.bluetoothActive;
+  } else {
+    color = AppColors.warning;
+  }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      color: color.withValues(alpha: 0.1),
-      child: Row(
-        children: [
-          Icon(
-            chat.isOnline ? Icons.wifi : Icons.bluetooth,
-            size: 16,
-            color: color,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  chat.modeLabel,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  chat.modeSubLabel,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: color.withValues(alpha: 0.8),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!chat.isOnline && !chat.isBluetoothConnected)
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const BluetoothScreen(),
-                ),
-              ),
-              child: Text(
-                'Connect →',
+  // ── Build subtitle showing who is in the chat ─────────────────
+  String subtitle = chat.modeSubLabel;
+  if (chat.recentSenders.isNotEmpty) {
+    subtitle = 'Active: ${chat.recentSenders.join(', ')}';
+  }
+
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+    color: color.withValues(alpha: 0.1),
+    child: Row(
+      children: [
+        Icon(
+  Icons.bluetooth,
+          size: 16,
+          color: color,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                chat.modeLabel,
                 style: TextStyle(
                   fontSize: 12,
                   color: color,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: color.withValues(alpha: 0.8),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        if (!chat.isOnline && !chat.isBluetoothConnected)
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const BluetoothScreen(),
+              ),
             ),
-        ],
-      ),
-    );
-  }
+            child: Text(
+              'Connect →',
+              style: TextStyle(
+                fontSize: 12,
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
 
   Widget _buildEmptyState() {
     return const Center(

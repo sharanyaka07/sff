@@ -13,6 +13,9 @@ class BluetoothScreen extends StatefulWidget {
 }
 
 class _BluetoothScreenState extends State<BluetoothScreen> {
+  // Track which device is currently being connected to
+  String? _connectingDeviceId;
+
   @override
   void initState() {
     super.initState();
@@ -32,6 +35,20 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
           appBar: AppBar(
             title: const Text('Bluetooth Devices'),
             actions: [
+              // Show advertising icon
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Tooltip(
+                  message: bt.isAdvertising
+                      ? 'Broadcasting — visible to nearby devices'
+                      : 'Not broadcasting',
+                  child: Icon(
+                    Icons.broadcast_on_personal,
+                    color: bt.isAdvertising ? Colors.white : Colors.white38,
+                    size: 20,
+                  ),
+                ),
+              ),
               IconButton(
                 icon: Icon(bt.isScanning ? Icons.stop : Icons.refresh),
                 onPressed: bt.isScanning
@@ -47,7 +64,10 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
               if (bt.isScanning) _buildScanningIndicator(),
               if (bt.state == BtConnectionState.off)
                 _buildFixPermissionsButton(),
-              _buildConnectedSection(bt),
+              _buildAdvertisingBanner(bt),
+              // ── Connected devices section ──────────────────────────
+              if (bt.connectedDevices.isNotEmpty)
+                _buildConnectedSection(bt),
               _buildAvailableSection(bt),
             ],
           ),
@@ -65,23 +85,24 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     switch (bt.state) {
       case BtConnectionState.scanning:
         color = AppColors.bluetoothActive;
-        text = 'Scanning for Safe Connect devices...';
+        text = 'Scanning for nearby devices...';
+        icon = Icons.bluetooth_searching;
+        break;
+      case BtConnectionState.connecting:
+        color = AppColors.warning;
+        text = 'Connecting...';
         icon = Icons.bluetooth_searching;
         break;
       case BtConnectionState.connected:
+        final count = bt.connectedDevices.length;
         color = AppColors.success;
-        text = 'Connected to ${bt.connectedDevices.length} device(s)';
+        text = 'Connected to $count device${count > 1 ? 's' : ''}';
         icon = Icons.bluetooth_connected;
         break;
       case BtConnectionState.off:
         color = AppColors.danger;
         text = 'Bluetooth is OFF or permissions denied';
         icon = Icons.bluetooth_disabled;
-        break;
-      case BtConnectionState.connecting:
-        color = AppColors.warning;
-        text = 'Connecting...';
-        icon = Icons.bluetooth_searching;
         break;
       default:
         color = AppColors.textSecondary;
@@ -112,11 +133,51 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     );
   }
 
+  // ── Advertising Banner ─────────────────────────────────────────
+  Widget _buildAdvertisingBanner(BluetoothController bt) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      color: bt.isAdvertising
+          ? AppColors.success.withValues(alpha: 0.08)
+          : AppColors.textHint.withValues(alpha: 0.05),
+      child: Row(
+        children: [
+          Icon(
+            bt.isAdvertising
+                ? Icons.broadcast_on_personal
+                : Icons.broadcast_on_personal_outlined,
+            size: 16,
+            color:
+                bt.isAdvertising ? AppColors.success : AppColors.textHint,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              bt.isAdvertising
+                  ? '📡 Broadcasting — nearby Safe Connect devices can find you'
+                  : 'Not broadcasting',
+              style: TextStyle(
+                fontSize: 12,
+                color: bt.isAdvertising
+                    ? AppColors.success
+                    : AppColors.textHint,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Scanning Indicator ─────────────────────────────────────────
   Widget _buildScanningIndicator() {
     return const LinearProgressIndicator(
       backgroundColor: Color(0xFFE3F2FD),
-      valueColor: AlwaysStoppedAnimation<Color>(AppColors.bluetoothActive),
+      valueColor:
+          AlwaysStoppedAnimation<Color>(AppColors.bluetoothActive),
     );
   }
 
@@ -142,98 +203,211 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     );
   }
 
-  // ── Connected Section ──────────────────────────────────────────
+  // ── Connected Devices Section ──────────────────────────────────
   Widget _buildConnectedSection(BluetoothController bt) {
-    if (bt.connectedDevices.isEmpty) return const SizedBox.shrink();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            'CONNECTED',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: AppColors.success,
-              letterSpacing: 1.2,
-            ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(
+            children: [
+              const Icon(Icons.link, size: 14, color: AppColors.success),
+              const SizedBox(width: 6),
+              const Text(
+                'CONNECTED',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.success,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: AppColors.success,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${bt.connectedDevices.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        ...bt.connectedDevices.map(
-          (device) => _DeviceTile(
-            name: device.platformName.isEmpty
-                ? 'Unknown Device'
-                : device.platformName,
-            subtitle: device.remoteId.str,
-            isConnected: true,
-            signalStrength: null,
-            onTap: () => _showDisconnectDialog(context, device, bt),
-          ),
-        ),
+        ...bt.connectedDevices.map((device) {
+          final name = device.platformName.isNotEmpty
+              ? device.platformName
+              : device.remoteId.str;
+          return _ConnectedDeviceTile(
+            name: name,
+            address: device.remoteId.str,
+            onDisconnect: () async {
+              await bt.disconnectDevice(device);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Disconnected from $name'),
+                    backgroundColor: AppColors.textSecondary,
+                  ),
+                );
+              }
+            },
+          );
+        }),
         const Divider(height: 1),
       ],
     );
   }
 
-  // ── Available Section ──────────────────────────────────────────
+  // ── Helper: Check if device is likely a non-phone ─────────────
+  bool _isLikelyNonPhone(String deviceName) {
+    final name = deviceName.toLowerCase();
+    
+    // List of keywords that indicate NON-PHONE devices
+    return name.contains('watch') ||      // Smartwatches
+           name.contains('band') ||       // Fitness bands
+           name.contains('tv') ||         // Smart TVs
+           name.contains('stb') ||        // Set-top boxes
+           name.contains('buds') ||       // Earbuds
+           name.contains('speaker') ||    // Bluetooth speakers
+           name.contains('headphone') ||  // Headphones
+           name.contains('headset') ||    // Headsets
+           name.contains('airpod') ||     // AirPods
+           name.contains('jbl') ||        // JBL speakers
+           name.contains('bose') ||       // Bose audio
+           name.contains('sony wh') ||    // Sony headphones
+           name.contains('beats') ||      // Beats headphones
+           name.contains('soundbar') ||   // Soundbars
+           name.contains('laptop') ||     // Laptops
+           name.contains('macbook') ||    // MacBooks
+           name.contains('pc') ||         // PCs
+           name.contains('printer') ||    // Printers
+           name.contains('mouse') ||      // Bluetooth mice
+           name.contains('keyboard') ||   // Bluetooth keyboards
+           name.contains('car') ||        // Car Bluetooth
+           name.contains('audio');        // Generic audio devices
+  }
+
+  // ── Available/Nearby Section ───────────────────────────────────
   Widget _buildAvailableSection(BluetoothController bt) {
+    // Filter: Show all devices EXCEPT obvious non-phones
+    // This allows custom names like "J's device", "Sharanya", "Ravi's phone"
+    final phoneDevices = bt.namedScanResults.where((result) {
+      final deviceName = result.device.platformName;
+      
+      // Skip devices without names (show only named devices)
+      if (deviceName.isEmpty) return false;
+      
+      // Filter out obvious non-phone devices
+      return !_isLikelyNonPhone(deviceName);
+    }).toList();
+
+    // All phone devices are treated as Safe Connect candidates
+    // UUID verification happens at connect time in connectToDevice()
+    final safeConnectResults = phoneDevices;
+    final otherResults = <ScanResult>[];
+
     return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: phoneDevices.isEmpty
+          ? _buildEmptyState(bt)
+          : ListView(
               children: [
-                const Text(
-                  'NEARBY DEVICES',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textSecondary,
-                    letterSpacing: 1.2,
+                // ── Nearby Devices (phones and custom names) ───────
+                if (safeConnectResults.isNotEmpty) ...[
+                  _buildSectionHeader(
+                    '✅ NEARBY DEVICES',
+                    '${safeConnectResults.length} found',
+                    AppColors.success,
                   ),
-                ),
-                Text(
-                  '${bt.scanResults.length} found',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textHint,
+                  ...safeConnectResults.map((result) {
+                    final devId = result.device.remoteId.str;
+                    final isAlreadyConnected = bt.connectedDevices
+                        .any((d) => d.remoteId == result.device.remoteId);
+                    final isConnecting = _connectingDeviceId == devId;
+
+                    return _DeviceTile(
+                      name: bt.getDisplayName(result),
+                      subtitle: isAlreadyConnected
+                          ? 'Connected — go to Chat to message'
+                          : isConnecting
+                              ? 'Connecting...'
+                              : 'Tap to connect',
+                      isConnected: isAlreadyConnected,
+                      isConnecting: isConnecting,
+                      isSafeConnect: true,
+                      signalStrength: result.rssi,
+                      onTap: () => _onSafeConnectDeviceTap(
+                        context,
+                        result,
+                        bt,
+                        isAlreadyConnected,
+                      ),
+                    );
+                  }),
+                ],
+
+                // ── Other nearby devices (hidden - filtered out) ───
+                if (otherResults.isNotEmpty) ...[
+                  _buildSectionHeader(
+                    'OTHER NEARBY DEVICES',
+                    '${otherResults.length} found',
+                    AppColors.textSecondary,
                   ),
-                ),
+                  ...otherResults.map((result) => _DeviceTile(
+                        name: bt.getDisplayName(result),
+                        subtitle: 'No Safe Connect — SOS only',
+                        isConnected: false,
+                        isConnecting: false,
+                        isSafeConnect: false,
+                        signalStrength: result.rssi,
+                        onTap: () => ScaffoldMessenger.of(context)
+                            .showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '📱 ${bt.getDisplayName(result)} does not have Safe Connect — '
+                              'SOS broadcasts will still reach them.',
+                            ),
+                            backgroundColor: AppColors.warning,
+                            duration: const Duration(seconds: 3),
+                          ),
+                        ),
+                      )),
+                ],
               ],
             ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, String count, Color color) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: color,
+              letterSpacing: 1.2,
+            ),
           ),
-          Expanded(
-            child: bt.scanResults.isEmpty
-                ? _buildEmptyState(bt)
-                : ListView.builder(
-                    itemCount: bt.scanResults.length,
-                    itemBuilder: (context, index) {
-                      final result = bt.scanResults[index];
-                      final isAlreadyConnected = bt.connectedDevices.any(
-                        (d) => d.remoteId == result.device.remoteId,
-                      );
-                      return _DeviceTile(
-                        name: result.device.platformName.isEmpty
-                            ? 'Unknown Device'
-                            : result.device.platformName,
-                        subtitle: result.device.remoteId.str,
-                        isConnected: isAlreadyConnected,
-                        signalStrength: result.rssi,
-                        onTap: isAlreadyConnected
-                            ? null
-                            : () => _connectToDevice(
-                                  context,
-                                  result.device,
-                                  bt,
-                                ),
-                      );
-                    },
-                  ),
+          Text(
+            count,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textHint,
+            ),
           ),
         ],
       ),
@@ -251,7 +425,7 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
             Icon(
               bt.isScanning
                   ? Icons.bluetooth_searching
-                  : Icons.bluetooth_disabled,
+                  : Icons.devices,
               size: 80,
               color: bt.isScanning
                   ? AppColors.bluetoothActive
@@ -275,7 +449,7 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
                   : 'Make sure:\n'
                       '• Bluetooth is ON\n'
                       '• Location is ON\n'
-                      '• Other device has app open',
+                      '• Other device has Safe Connect open',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 13,
@@ -302,65 +476,130 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     );
   }
 
-  // ── Connect to Device ──────────────────────────────────────────
-  Future<void> _connectToDevice(
+  // ── Safe Connect device tap → GATT connect ────────────────────
+  Future<void> _onSafeConnectDeviceTap(
     BuildContext context,
-    BluetoothDevice device,
+    ScanResult result,
     BluetoothController bt,
+    bool isAlreadyConnected,
   ) async {
+    final name = bt.getDisplayName(result);
+
+    if (isAlreadyConnected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Already connected to $name — go to Chat!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _connectingDeviceId = result.device.remoteId.str);
+
+    // Store messenger reference BEFORE async gap
     final messenger = ScaffoldMessenger.of(context);
+
     messenger.showSnackBar(
       SnackBar(
-        content: Text('Connecting to ${device.platformName}...'),
-        backgroundColor: AppColors.bluetooth,
-        duration: const Duration(seconds: 2),
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text('Connecting to $name...'),
+          ],
+        ),
+        duration: const Duration(seconds: 10),
+        backgroundColor: AppColors.bluetoothActive,
       ),
     );
 
-    final success = await bt.connectToDevice(device);
+    final success = await bt.connectToDevice(result.device);
 
-    if (context.mounted) {
+    if (mounted) {
+      setState(() => _connectingDeviceId = null);
+      messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
           content: Text(
             success
-                ? '✅ Connected to ${device.platformName}'
-                : '❌ Failed to connect',
+                ? '✅ Connected to $name! Go to Chat to message them.'
+                : '❌ Failed to connect to $name. Try again.',
           ),
           backgroundColor: success ? AppColors.success : AppColors.danger,
-          duration: const Duration(seconds: 2),
+          duration: const Duration(seconds: 3),
         ),
       );
     }
   }
+}
 
-  // ── Disconnect Dialog ──────────────────────────────────────────
-  Future<void> _showDisconnectDialog(
-    BuildContext context,
-    BluetoothDevice device,
-    BluetoothController bt,
-  ) async {
-    return showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Disconnect?'),
-        content: Text('Disconnect from ${device.platformName}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
+// ── Connected Device Tile ──────────────────────────────────────────
+class _ConnectedDeviceTile extends StatelessWidget {
+  final String name;
+  final String address;
+  final VoidCallback onDisconnect;
+
+  const _ConnectedDeviceTile({
+    required this.name,
+    required this.address,
+    required this.onDisconnect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: AppColors.success.withValues(alpha: 0.15),
+        child: const Icon(
+          Icons.bluetooth_connected,
+          color: AppColors.success,
+          size: 20,
+        ),
+      ),
+      title: Text(
+        name,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+        ),
+      ),
+      subtitle: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(right: 6),
+            decoration: const BoxDecoration(
+              color: AppColors.success,
+              shape: BoxShape.circle,
             ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              bt.disconnectDevice(device);
-            },
-            child: const Text('Disconnect'),
+          ),
+          const Text(
+            'Connected',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.success,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
+      ),
+      trailing: TextButton.icon(
+        onPressed: onDisconnect,
+        icon: const Icon(Icons.link_off, size: 16),
+        label: const Text('Disconnect'),
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.danger,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+        ),
       ),
     );
   }
@@ -371,6 +610,8 @@ class _DeviceTile extends StatelessWidget {
   final String name;
   final String subtitle;
   final bool isConnected;
+  final bool isConnecting;
+  final bool isSafeConnect;
   final int? signalStrength;
   final VoidCallback? onTap;
 
@@ -378,6 +619,8 @@ class _DeviceTile extends StatelessWidget {
     required this.name,
     required this.subtitle,
     required this.isConnected,
+    required this.isConnecting,
+    required this.isSafeConnect,
     required this.signalStrength,
     this.onTap,
   });
@@ -395,12 +638,31 @@ class _DeviceTile extends StatelessWidget {
       leading: CircleAvatar(
         backgroundColor: isConnected
             ? AppColors.success.withValues(alpha: 0.15)
-            : AppColors.bluetooth.withValues(alpha: 0.1),
-        child: Icon(
-          isConnected ? Icons.bluetooth_connected : Icons.bluetooth,
-          color: isConnected ? AppColors.success : AppColors.bluetooth,
-          size: 20,
-        ),
+            : isSafeConnect
+                ? AppColors.success.withValues(alpha: 0.08)
+                : AppColors.bluetooth.withValues(alpha: 0.1),
+        child: isConnecting
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.bluetoothActive,
+                ),
+              )
+            : Icon(
+                isConnected
+                    ? Icons.bluetooth_connected
+                    : isSafeConnect
+                        ? Icons.smartphone
+                        : Icons.bluetooth,
+                color: isConnected
+                    ? AppColors.success
+                    : isSafeConnect
+                        ? AppColors.success
+                        : AppColors.bluetooth,
+                size: 20,
+              ),
       ),
       title: Text(
         name,
@@ -410,10 +672,14 @@ class _DeviceTile extends StatelessWidget {
         ),
       ),
       subtitle: Text(
-        isConnected ? '✅ Connected' : subtitle,
+        subtitle,
         style: TextStyle(
           fontSize: 12,
-          color: isConnected ? AppColors.success : AppColors.textHint,
+          color: isConnected
+              ? AppColors.success
+              : isSafeConnect
+                  ? AppColors.success.withValues(alpha: 0.8)
+                  : AppColors.textHint,
         ),
       ),
       trailing: signalStrength != null
@@ -435,7 +701,7 @@ class _DeviceTile extends StatelessWidget {
               ],
             )
           : null,
-      onTap: onTap,
+      onTap: isConnecting ? null : onTap,
     );
   }
 }
