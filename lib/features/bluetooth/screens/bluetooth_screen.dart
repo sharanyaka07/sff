@@ -70,7 +70,11 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
         break;
       case BtConnectionState.connected:
         color = AppColors.success;
-        text = 'Connected to ${bt.connectedDevices.length} device(s)';
+        // Show connected client name if available
+        final clientName = bt.connectedClientName.isNotEmpty
+            ? bt.connectedClientName
+            : '${bt.connectedDevices.length} device(s)';
+        text = '📡 Broadcasting  •  Connected to $clientName';
         icon = Icons.bluetooth_connected;
         break;
       case BtConnectionState.off:
@@ -84,8 +88,8 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
         icon = Icons.bluetooth_searching;
         break;
       default:
-        color = AppColors.textSecondary;
-        text = 'Ready to scan';
+        color = AppColors.success;
+        text = '📡 Broadcasting — waiting for connections';
         icon = Icons.bluetooth;
     }
 
@@ -144,7 +148,10 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
 
   // ── Connected Section ──────────────────────────────────────────
   Widget _buildConnectedSection(BluetoothController bt) {
-    if (bt.connectedDevices.isEmpty) return const SizedBox.shrink();
+    // Show section if we have outgoing connections OR incoming client
+    final hasConnections =
+        bt.connectedDevices.isNotEmpty || bt.serverHasClients;
+    if (!hasConnections) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,6 +168,7 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
             ),
           ),
         ),
+        // Show outgoing connections (we connected to them)
         ...bt.connectedDevices.map(
           (device) => _DeviceTile(
             name: device.platformName.isEmpty
@@ -172,6 +180,17 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
             onTap: () => _showDisconnectDialog(context, device, bt),
           ),
         ),
+        // Show incoming connection (they connected to us)
+        if (bt.serverHasClients && bt.connectedDevices.isEmpty)
+          _DeviceTile(
+            name: bt.connectedClientName.isNotEmpty
+                ? bt.connectedClientName
+                : 'Connected Device',
+            subtitle: 'Connected via Bluetooth',
+            isConnected: true,
+            signalStrength: null,
+            onTap: null,
+          ),
         const Divider(height: 1),
       ],
     );
@@ -217,10 +236,10 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
                       final isAlreadyConnected = bt.connectedDevices.any(
                         (d) => d.remoteId == result.device.remoteId,
                       );
+                      // ── Use getDisplayName for proper name resolution ──
+                      final displayName = bt.getDisplayName(result);
                       return _DeviceTile(
-                        name: result.device.platformName.isEmpty
-                            ? 'Unknown Device'
-                            : result.device.platformName,
+                        name: displayName,
                         subtitle: result.device.remoteId.str,
                         isConnected: isAlreadyConnected,
                         signalStrength: result.rssi,
@@ -230,6 +249,7 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
                                   context,
                                   result.device,
                                   bt,
+                                  displayName,
                                 ),
                       );
                     },
@@ -275,7 +295,8 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
                   : 'Make sure:\n'
                       '• Bluetooth is ON\n'
                       '• Location is ON\n'
-                      '• Other device has app open',
+                      '• Other device has app open\n'
+                      '• Other device screen is ON',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 13,
@@ -307,11 +328,12 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     BuildContext context,
     BluetoothDevice device,
     BluetoothController bt,
+    String displayName,
   ) async {
     final messenger = ScaffoldMessenger.of(context);
     messenger.showSnackBar(
       SnackBar(
-        content: Text('Connecting to ${device.platformName}...'),
+        content: Text('Connecting to $displayName...'),
         backgroundColor: AppColors.bluetooth,
         duration: const Duration(seconds: 2),
       ),
@@ -324,11 +346,11 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
         SnackBar(
           content: Text(
             success
-                ? '✅ Connected to ${device.platformName}'
-                : '❌ Failed to connect',
+                ? '✅ Connected to $displayName'
+                : '❌ Failed to connect — make sure Safe Connect is open on their phone',
           ),
           backgroundColor: success ? AppColors.success : AppColors.danger,
-          duration: const Duration(seconds: 2),
+          duration: const Duration(seconds: 3),
         ),
       );
     }
