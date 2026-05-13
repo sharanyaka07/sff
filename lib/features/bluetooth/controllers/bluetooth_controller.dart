@@ -30,13 +30,17 @@ class BluetoothController extends ChangeNotifier {
   static const String serviceUuid = '12345678-1234-1234-1234-123456789abc';
   static const String charUuid    = 'abcd1234-1234-1234-1234-abcdef123456';
 
+  // MAC regex — used to detect if a "name" is actually just a MAC address
+  static final _macRegex =
+      RegExp(r'^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$');
+
   BtConnectionState _state = BtConnectionState.unknown;
   BtConnectionState get state => _state;
 
   final List<ScanResult> _scanResults = [];
   List<ScanResult> get scanResults => List.unmodifiable(_scanResults);
 
-  // ── Return ALL scan results (not just named ones) ─────────────────
+  // Return ALL scan results (filtering to named ones happens in the UI)
   List<ScanResult> get namedScanResults => List.unmodifiable(_scanResults);
 
   final List<BluetoothDevice> _connectedDevices = [];
@@ -66,13 +70,19 @@ class BluetoothController extends ChangeNotifier {
   bool _serverHasClients = false;
   bool get serverHasClients => _serverHasClients;
 
-  // ── Connected clients map: MAC/id → friendly name ────────────────
+  // ── Name caches ────────────────────────────────────────────────
+  // senderId (UUID) → friendly name  (from handshake)
   final Map<String, String> _clientNames = {};
+  // MAC address → friendly name  (from handshake, keyed by MAC too)
+  final Map<String, String> _macToName = {};
 
   String _connectedClientName = '';
   String get connectedClientName => _connectedClientName;
 
   bool get isAdvertising => true;
+
+  // ── Heartbeat timer — keeps BLE connection alive ───────────────
+  Timer? _heartbeatTimer;
 
   StreamSubscription? _scanSubscription;
   StreamSubscription? _adapterStateSubscription;
@@ -110,7 +120,18 @@ class BluetoothController extends ChangeNotifier {
         if (payload.startsWith('CLIENT_CONNECTED:')) {
           final clientAddress = payload.replaceFirst('CLIENT_CONNECTED:', '');
           _serverHasClients = true;
-          _connectedClientName = _clientNames[clientAddress] ?? clientAddress;
+
+          // Look up name: check MAC cache first, then UUID cache, then raw address
+          final cachedName = _macToName[clientAddress] ??
+              (_clientNames.values.isNotEmpty
+                  ? _clientNames.values.last
+                  : null);
+
+          _connectedClientName = (cachedName != null &&
+                  !_macRegex.hasMatch(cachedName))
+              ? cachedName
+              : clientAddress; // still a MAC — handshake hasn't arrived yet
+
           _setState(BtConnectionState.connected);
           AppLogger.bluetooth('Client connected: $_connectedClientName ✅');
           notifyListeners();
@@ -157,6 +178,7 @@ class BluetoothController extends ChangeNotifier {
         _setState(BtConnectionState.idle);
         _startNativeGattServer();
       } else if (adapterState == BluetoothAdapterState.off) {
+        _heartbeatTimer?.cancel();
         _setState(BtConnectionState.off);
         _scanResults.clear();
         _connectedDevices.clear();
@@ -164,6 +186,7 @@ class BluetoothController extends ChangeNotifier {
         _serverHasClients = false;
         _connectedClientName = '';
         _clientNames.clear();
+        _macToName.clear();
         notifyListeners();
       }
     });
@@ -182,15 +205,19 @@ class BluetoothController extends ChangeNotifier {
 
   // ── Get best display name from scan result ────────────────────────
   String _getDeviceName(ScanResult result) {
-    // 1. Try advertisement name first (most reliable)
+    // 1. Advertisement name (most reliable for BLE)
     if (result.advertisementData.advName.isNotEmpty) {
       return result.advertisementData.advName;
     }
-    // 2. Try platform name
+    // 2. Platform name (resolved by OS)
     if (result.device.platformName.isNotEmpty) {
       return result.device.platformName;
     }
-    // 3. Fall back to MAC address
+    // 3. Check MAC → name cache (set during handshake)
+    final cached = _macToName[result.device.remoteId.str];
+    if (cached != null && cached.isNotEmpty) return cached;
+
+    // 4. Fall back to MAC address
     return result.device.remoteId.str;
   }
 
@@ -250,7 +277,6 @@ class BluetoothController extends ChangeNotifier {
               (r) => r.device.remoteId == result.device.remoteId,
             );
             if (idx == -1) {
-              // New device — add it
               _scanResults.add(result);
               changed = true;
               final name = _getDeviceName(result);
@@ -265,13 +291,12 @@ class BluetoothController extends ChangeNotifier {
                 );
               }
             } else {
-              // Existing device — update with fresher data (better name/rssi)
+              // Update if we now have a better name
               final existing = _scanResults[idx];
               final existingName = _getDeviceName(existing);
               final newName = _getDeviceName(result);
-              // Replace if new result has a better name
-              if (existingName == existing.device.remoteId.str &&
-                  newName != result.device.remoteId.str) {
+              if (_macRegex.hasMatch(existingName) &&
+                  !_macRegex.hasMatch(newName)) {
                 _scanResults[idx] = result;
                 changed = true;
                 AppLogger.bluetooth('Updated device name: $newName');
@@ -283,7 +308,6 @@ class BluetoothController extends ChangeNotifier {
         onError: (e) => AppLogger.error('Scan stream error', error: e),
       );
 
-      // ── Increased timeout to 30s so Lava phones have time to appear ──
       await FlutterBluePlus.startScan(
         timeout: const Duration(seconds: 30),
         androidUsesFineLocation: true,
@@ -369,12 +393,17 @@ class BluetoothController extends ChangeNotifier {
       _setState(BtConnectionState.connected);
       notifyListeners();
 
-      // ── Send handshake so other phone knows our name ──────────────
+      // ── Send handshake so the other phone learns our name ─────────
       await Future.delayed(const Duration(milliseconds: 500));
       await _sendHandshake(targetChar);
 
+      // ── Start heartbeat to keep BLE connection alive ───────────────
+      _startHeartbeat(device, targetChar);
+
+      // ── Listen for disconnection ───────────────────────────────────
       device.connectionState.listen((connectionState) {
         if (connectionState == BluetoothConnectionState.disconnected) {
+          _heartbeatTimer?.cancel();
           _connectedDevices
               .removeWhere((d) => d.remoteId == device.remoteId);
           _writeChars.remove(device.remoteId.str);
@@ -393,10 +422,34 @@ class BluetoothController extends ChangeNotifier {
       return true;
     } catch (e) {
       AppLogger.error('Connect failed: $e', error: e);
+      _heartbeatTimer?.cancel();
       _setState(BtConnectionState.idle);
       notifyListeners();
       return false;
     }
+  }
+
+  // ── Heartbeat: sends a tiny ping every 3s to keep BLE alive ──────
+  void _startHeartbeat(BluetoothDevice device, BluetoothCharacteristic char) {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+      // Stop if device is no longer in connected list
+      if (!_connectedDevices.any((d) => d.remoteId == device.remoteId)) {
+        _heartbeatTimer?.cancel();
+        return;
+      }
+      try {
+        final ping = jsonEncode({
+          'type': 'ping',
+          'senderId': _deviceId,
+        });
+        await _sendChunked(char, ping);
+        AppLogger.bluetooth('Heartbeat ping sent ✅');
+      } catch (e) {
+        AppLogger.error('Heartbeat failed', error: e);
+        _heartbeatTimer?.cancel();
+      }
+    });
   }
 
   // ── Send handshake: announce our name to the other device ────────
@@ -415,6 +468,7 @@ class BluetoothController extends ChangeNotifier {
   }
 
   Future<void> disconnectDevice(BluetoothDevice device) async {
+    _heartbeatTimer?.cancel();
     try {
       await device.disconnect();
     } catch (_) {}
@@ -549,7 +603,7 @@ class BluetoothController extends ChangeNotifier {
         _expectedChunks.remove(devId);
         _receivedChunks.remove(devId);
         AppLogger.bluetooth('All chunks received from ${device.platformName}');
-        _processReceivedMessage(fullPayload);
+        _processReceivedMessage(fullPayload, senderMac: device.remoteId.str);
       }
     } catch (e) {
       AppLogger.error('Client data receive error', error: e);
@@ -557,19 +611,30 @@ class BluetoothController extends ChangeNotifier {
   }
 
   // ── Process received message or handshake ────────────────────────
-  void _processReceivedMessage(String payload) {
+  void _processReceivedMessage(String payload, {String? senderMac}) {
     try {
       final map = jsonDecode(payload) as Map<String, dynamic>;
 
+      // ── Ping: just a keepalive, ignore silently ───────────────────
+      if (map['type'] == 'ping') {
+        AppLogger.bluetooth('Heartbeat ping received ✅');
+        return;
+      }
+
+      // ── Handshake: other device is announcing their name ──────────
       if (map['type'] == 'handshake') {
         final senderName = map['senderName'] as String? ?? 'Unknown';
         final senderId   = map['senderId']   as String? ?? '';
         AppLogger.bluetooth('Handshake received from: $senderName ✅');
-        _clientNames[senderId] = senderName;
-        if (_serverHasClients) {
-          _connectedClientName = senderName;
-          notifyListeners();
-        }
+
+        // Cache by UUID
+        if (senderId.isNotEmpty) _clientNames[senderId] = senderName;
+        // Cache by MAC address too (so CLIENT_CONNECTED can look it up)
+        if (senderMac != null) _macToName[senderMac] = senderName;
+
+        // Always update displayed name — handshake is the source of truth
+        _connectedClientName = senderName;
+        notifyListeners();
         return;
       }
 
@@ -645,9 +710,15 @@ class BluetoothController extends ChangeNotifier {
     DbHelper.clearMessages();
     notifyListeners();
   }
-
+  
+void clearMessagesForSender(String senderId) {
+  _messages.removeWhere((m) => m.senderId == senderId);
+  DbHelper.clearMessagesForSender(senderId);
+  notifyListeners();
+}
   @override
   void dispose() {
+    _heartbeatTimer?.cancel();
     _scanSubscription?.cancel();
     _adapterStateSubscription?.cancel();
     _nativeMessageSubscription?.cancel();

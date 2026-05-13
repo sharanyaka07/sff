@@ -1,145 +1,91 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../data/local/models/message_model.dart';
-import '../../bluetooth/screens/bluetooth_screen.dart';
 import '../controllers/chat_controller.dart';
+import '../../bluetooth/screens/bluetooth_screen.dart';
+import 'individual_chat_screen.dart';
 
-class ChatScreen extends StatefulWidget {
+class ChatScreen extends StatelessWidget {
   const ChatScreen({super.key});
-
-  @override
-  State<ChatScreen> createState() => _ChatScreenState();
-}
-
-class _ChatScreenState extends State<ChatScreen> {
-  final TextEditingController _textController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-
-  @override
-  void dispose() {
-    _textController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
-
-  Future<void> _sendMessage(ChatController chat) async {
-    final text = _textController.text.trim();
-    if (text.isEmpty) return;
-
-    _textController.clear();
-    final success = await chat.sendMessage(text);
-    _scrollToBottom();
-
-    if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ No connection. Connect Bluetooth or Internet.'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ChatController>(
       builder: (context, chat, _) {
-        _scrollToBottom();
+        final conversations = chat.conversations;
+
         return Scaffold(
-         // ── Replace AppBar in build() ─────────────────────────────────────
-appBar: AppBar(
-  title: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'Secure Chat',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-      ),
-      // ── Show who you're chatting with ─────────────────────────
-      if (chat.recentSenders.isNotEmpty)
-        Text(
-          'Chatting with: ${chat.recentSenders.join(', ')}',
-          style: const TextStyle(
-            fontSize: 11,
-            color: Colors.white70,
-            fontWeight: FontWeight.normal,
-          ),
-        )
-      else if (chat.isBluetoothConnected)
-  Text(
-    'Connected to ${chat.connectedDeviceName}',
-    style: const TextStyle(
-      fontSize: 11,
-      color: Colors.white70,
-      fontWeight: FontWeight.normal,
-    ),
-  )
-      else
-        const Text(
-          'Waiting for nearby devices...',
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.white70,
-            fontWeight: FontWeight.normal,
-          ),
-        ),
-    ],
-  ),
-  actions: [
-    IconButton(
-      icon: Stack(
-        children: [
-          const Icon(Icons.bluetooth_searching),
-          if (chat.isBluetoothConnected)
-            Positioned(
-              right: 0,
-              top: 0,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: AppColors.success,
-                  shape: BoxShape.circle,
-                ),
-              ),
+          appBar: AppBar(
+            title: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Chats',
+                    style: TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('End-to-end encrypted',
+                    style:
+                        TextStyle(fontSize: 11, color: Colors.white70)),
+              ],
             ),
-        ],
-      ),
-      onPressed: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const BluetoothScreen(),
-        ),
-      ),
-    ),
-    IconButton(
-      icon: const Icon(Icons.delete_outline),
-      onPressed: () => _showClearDialog(context, chat),
-    ),
-  ],
-),
+            actions: [
+              IconButton(
+                icon: Stack(
+                  children: [
+                    const Icon(Icons.bluetooth_searching),
+                    if (chat.isBluetoothConnected)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppColors.success,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const BluetoothScreen()),
+                ),
+                tooltip: 'Bluetooth',
+              ),
+            ],
+          ),
           body: Column(
             children: [
-              _buildModeBanner(chat),
+              _buildConnectionBanner(chat),
               Expanded(
-                child: chat.allMessages.isEmpty
-                    ? _buildEmptyState()
-                    : _buildMessageList(chat),
+                child: conversations.isEmpty
+                    ? _buildEmptyState(context, chat)
+                    : ListView.separated(
+                        itemCount: conversations.length,
+                        separatorBuilder: (_, __) =>
+                            const Divider(height: 1, indent: 72),
+                        itemBuilder: (context, index) {
+                          final convo = conversations[index];
+                          return _ConversationTile(
+                            conversation: convo,
+                            onTap: () {
+                              chat.markAsRead(convo.senderId);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => IndividualChatScreen(
+                                    senderId: convo.senderId,
+                                    senderName: convo.senderName,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
               ),
-              _buildInputBar(chat),
             ],
           ),
         );
@@ -147,327 +93,224 @@ appBar: AppBar(
     );
   }
 
- Widget _buildModeBanner(ChatController chat) {
-  Color color;
-  if (chat.isOnline && chat.isBluetoothConnected) {
-    color = AppColors.success;
-  } else if (chat.isOnline) {
-    color = AppColors.primary;
-  } else if (chat.isBluetoothConnected) {
-    color = AppColors.bluetoothActive;
-  } else {
-    color = AppColors.warning;
-  }
+  Widget _buildConnectionBanner(ChatController chat) {
+    Color color;
+    String text;
 
-  // ── Build subtitle showing who is in the chat ─────────────────
-  String subtitle = chat.modeSubLabel;
-  if (chat.recentSenders.isNotEmpty) {
-    subtitle = 'Active: ${chat.recentSenders.join(', ')}';
-  }
+    if (chat.isBluetoothConnected) {
+      color = AppColors.bluetoothActive;
+      text =
+          '🔵 Bluetooth Connected  •  Connected to ${chat.connectedDeviceName}';
+    } else {
+      color = AppColors.warning;
+      text = '⚠️ Not Connected  •  Go to Bluetooth tab to connect';
+    }
 
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-    color: color.withValues(alpha: 0.1),
-    child: Row(
-      children: [
-        Icon(
-  Icons.bluetooth,
-          size: 16,
-          color: color,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                chat.modeLabel,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: color.withValues(alpha: 0.8),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-        if (!chat.isOnline && !chat.isBluetoothConnected)
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const BluetoothScreen(),
-              ),
-            ),
-            child: Text(
-              'Connect →',
-              style: TextStyle(
-                fontSize: 12,
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-      ],
-    ),
-  );
-}
-
-  Widget _buildEmptyState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.chat_bubble_outline, size: 64, color: AppColors.textHint),
-          SizedBox(height: 16),
-          Text(
-            'No messages yet',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Messages will appear here\nfrom Bluetooth or Internet',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: AppColors.textHint),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageList(ChatController chat) {
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: chat.allMessages.length,
-      itemBuilder: (context, index) {
-        return _MessageBubble(message: chat.allMessages[index]);
-      },
-    );
-  }
-
-  Widget _buildInputBar(ChatController chat) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _textController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                hintText: 'Type a message...',
-                hintStyle: const TextStyle(color: AppColors.textHint),
-                filled: true,
-                fillColor: AppColors.background,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-              ),
-              onSubmitted: (_) => _sendMessage(chat),
-            ),
-          ),
-          const SizedBox(width: 8),
-          CircleAvatar(
-            backgroundColor: AppColors.primary,
-            child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white, size: 18),
-              onPressed: () => _sendMessage(chat),
-            ),
-          ),
-        ],
+      width: double.infinity,
+      padding:
+          const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      color: color.withValues(alpha: 0.1),
+      child: Text(
+        text,
+        style: TextStyle(
+            fontSize: 11,
+            color: color,
+            fontWeight: FontWeight.w500),
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
 
-  Future<void> _showClearDialog(
-    BuildContext context,
-    ChatController chat,
-  ) async {
-    return showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Clear Messages?'),
-        content: const Text('This will delete all local messages.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
+  Widget _buildEmptyState(
+      BuildContext context, ChatController chat) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.chat_bubble_outline,
+                size: 80, color: AppColors.textHint),
+            const SizedBox(height: 16),
+            const Text(
+              'No conversations yet',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary),
             ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              chat.clearAll();
-            },
-            child: const Text('Clear'),
-          ),
-        ],
+            const SizedBox(height: 8),
+            const Text(
+              'Connect to a nearby device\nand start chatting!',
+              textAlign: TextAlign.center,
+              style:
+                  TextStyle(fontSize: 13, color: AppColors.textHint),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const BluetoothScreen()),
+              ),
+              icon: const Icon(Icons.bluetooth_searching),
+              label: const Text('Find Nearby Devices'),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ── Message Bubble ─────────────────────────────────────────────────
-class _MessageBubble extends StatelessWidget {
-  final MessageModel message;
-  const _MessageBubble({required this.message});
+// ── Conversation Tile ──────────────────────────────────────────────
+class _ConversationTile extends StatelessWidget {
+  final Conversation conversation;
+  final VoidCallback onTap;
+
+  const _ConversationTile({
+    required this.conversation,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isMe = message.isMe;
-    final isRelay = message.type == MessageType.relay;
+    final hasUnread = conversation.unreadCount > 0;
+    final isConnected = conversation.isConnectedNow;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+    return ListTile(
+      onTap: onTap,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      leading: Stack(
         children: [
-          if (!isMe) ...[
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+          CircleAvatar(
+            radius: 26,
+            backgroundColor:
+                AppColors.primary.withValues(alpha: 0.15),
+            child: Text(
+              conversation.senderName.isNotEmpty
+                  ? conversation.senderName[0].toUpperCase()
+                  : '?',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          // Green dot if currently connected
+          if (isConnected)
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: AppColors.success,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+              ),
+            ),
+        ],
+      ),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              conversation.senderName,
+              style: TextStyle(
+                fontWeight:
+                    hasUnread ? FontWeight.bold : FontWeight.w600,
+                fontSize: 15,
+              ),
+            ),
+          ),
+          Text(
+            _formatTime(conversation.lastMessageTime),
+            style: TextStyle(
+              fontSize: 11,
+              color: hasUnread
+                  ? AppColors.primary
+                  : AppColors.textHint,
+              fontWeight: hasUnread
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+      subtitle: Row(
+        children: [
+          if (conversation.lastMessageIsMe)
+            const Padding(
+              padding: EdgeInsets.only(right: 4),
+              child: Icon(Icons.done_all,
+                  size: 14, color: AppColors.textHint),
+            ),
+          Expanded(
+            child: Text(
+              // Show "Tap to start chatting" hint if no messages yet
+              conversation.lastMessage,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                color: conversation.lastMessage ==
+                        'Tap to start chatting 💬'
+                    ? AppColors.primary
+                    : hasUnread
+                        ? AppColors.textPrimary
+                        : AppColors.textHint,
+                fontStyle: conversation.lastMessage ==
+                        'Tap to start chatting 💬'
+                    ? FontStyle.italic
+                    : FontStyle.normal,
+                fontWeight: hasUnread
+                    ? FontWeight.w500
+                    : FontWeight.normal,
+              ),
+            ),
+          ),
+          if (hasUnread)
+            Container(
+              margin: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsets.all(6),
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+              ),
               child: Text(
-                message.senderName.isNotEmpty
-                    ? message.senderName[0].toUpperCase()
-                    : '?',
+                '${conversation.unreadCount}',
                 style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.primary,
+                  color: Colors.white,
+                  fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 10,
-              ),
-              decoration: BoxDecoration(
-                color: isMe ? AppColors.primary : Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: Radius.circular(isMe ? 16 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 16),
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!isMe) ...[
-                    Text(
-                      '${message.senderName}${isRelay ? ' (relayed)' : ''}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.primary.withValues(alpha: 0.8),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                  ],
-                  Text(
-                    message.content,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: isMe ? Colors.white : AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                   Row(
-                      mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 🔒 Encryption badge
-                      if (message.isEncrypted)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Icon(
-                            Icons.lock,
-                            size: 10,
-                            color: isMe ? Colors.white54 : AppColors.success,
-                          ),
-                        ),
-                      Text(
-                        _formatTime(message.timestamp),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: isMe ? Colors.white70 : AppColors.textHint,
-                        ),
-                      ),
-                      if (isMe) ...[
-                        const SizedBox(width: 4),
-                        _statusIcon(message.status),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (isMe) const SizedBox(width: 8),
         ],
       ),
     );
   }
 
-  Widget _statusIcon(MessageStatus status) {
-    switch (status) {
-      case MessageStatus.sending:
-        return const Icon(Icons.access_time, size: 12, color: Colors.white54);
-      case MessageStatus.sent:
-        return const Icon(Icons.check, size: 12, color: Colors.white70);
-      case MessageStatus.delivered:
-        return const Icon(Icons.done_all, size: 12, color: Colors.white);
-      case MessageStatus.failed:
-        return const Icon(Icons.error_outline, size: 12, color: Colors.red);
-    }
-  }
-
   String _formatTime(DateTime time) {
-    final h = time.hour.toString().padLeft(2, '0');
-    final m = time.minute.toString().padLeft(2, '0');
-    return '$h:$m';
+    final now = DateTime.now();
+    final diff = now.difference(time);
+    if (diff.inDays == 0) {
+      final h = time.hour.toString().padLeft(2, '0');
+      final m = time.minute.toString().padLeft(2, '0');
+      return '$h:$m';
+    } else if (diff.inDays == 1) {
+      return 'Yesterday';
+    } else if (diff.inDays < 7) {
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      return days[time.weekday - 1];
+    } else {
+      return '${time.day}/${time.month}/${time.year % 100}';
+    }
   }
 }

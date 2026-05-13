@@ -6,6 +6,7 @@ import android.bluetooth.le.*
 import android.content.Context
 import android.os.Build
 import android.os.ParcelUuid
+import android.os.PowerManager
 import android.telephony.SmsManager
 import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
@@ -30,8 +31,10 @@ class MainActivity : FlutterActivity() {
     private var advertiser: BluetoothLeAdvertiser? = null
     private val connectedCentrals = mutableListOf<BluetoothDevice>()
 
+    // ── Wake lock — prevents Android from killing BLE connection ─────
+    private var wakeLock: PowerManager.WakeLock? = null
+
     // ── Store device names from scan results ─────────────────────────
-    // Key: device MAC address, Value: friendly name
     private val deviceNameCache = mutableMapOf<String, String>()
 
     // ── Chunk assembly: deviceAddress → buffer ───────────────────────
@@ -60,16 +63,49 @@ class MainActivity : FlutterActivity() {
     @SuppressLint("MissingPermission")
     override fun onStart() {
         super.onStart()
+        acquireWakeLock()   // ← Keep CPU alive for BLE
         if (!isServerRunning) {
             try {
                 startGattServer()
                 startAdvertising()
-                startNameScan() // ← Scan to cache device names
+                startNameScan()
                 isServerRunning = true
                 Log.d("GATT", "Auto-started GATT server in onStart ✅")
             } catch (e: Exception) {
                 Log.e("GATT", "Auto-start failed: ${e.message}")
             }
+        }
+    }
+
+    // ── Wake lock: keeps CPU running so BLE stays alive ──────────────
+    private fun acquireWakeLock() {
+        try {
+            if (wakeLock == null) {
+                val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+                wakeLock = powerManager.newWakeLock(
+                    PowerManager.PARTIAL_WAKE_LOCK,
+                    "SafeConnect::BluetoothWakeLock"
+                )
+            }
+            if (wakeLock?.isHeld == false) {
+                // Hold for up to 60 minutes — prevents BLE drop
+                wakeLock?.acquire(60 * 60 * 1000L)
+                Log.d("GATT", "Wake lock acquired ✅")
+            }
+        } catch (e: Exception) {
+            Log.e("GATT", "Wake lock failed: ${e.message}")
+        }
+    }
+
+    // ── Release wake lock safely ──────────────────────────────────────
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+                Log.d("GATT", "Wake lock released")
+            }
+        } catch (e: Exception) {
+            Log.e("GATT", "Wake lock release failed: ${e.message}")
         }
     }
 
@@ -107,15 +143,10 @@ class MainActivity : FlutterActivity() {
     // ── Get best available name for a device ─────────────────────────
     @SuppressLint("MissingPermission")
     private fun getDeviceName(device: BluetoothDevice): String {
-        // 1. Check our name cache first (from scan results)
         val cachedName = deviceNameCache[device.address]
         if (!cachedName.isNullOrEmpty()) return cachedName
-
-        // 2. Try device.name (works if device was previously bonded/paired)
         val deviceName = try { device.name } catch (e: Exception) { null }
         if (!deviceName.isNullOrEmpty()) return deviceName
-
-        // 3. Fall back to MAC address
         return device.address
     }
 
@@ -175,6 +206,7 @@ class MainActivity : FlutterActivity() {
 
                 "startGattServer" -> {
                     try {
+                        acquireWakeLock()   // ← Also acquire on explicit start
                         if (!isServerRunning) {
                             startGattServer()
                             startAdvertising()
@@ -189,6 +221,7 @@ class MainActivity : FlutterActivity() {
 
                 "stopGattServer" -> {
                     stopGattServer()
+                    releaseWakeLock()
                     isServerRunning = false
                     result.success(true)
                 }
@@ -285,17 +318,18 @@ class MainActivity : FlutterActivity() {
                     connectedCentrals.add(device)
                 }
 
-                // ── Use getDeviceName() which checks cache first ──────
-                val name = getDeviceName(device)
-                Log.d("GATT", "Central connected: $name ✅")
+                // Re-acquire wake lock on each new connection
+                acquireWakeLock()
 
                 // Small delay to allow name cache to populate
                 Thread.sleep(300)
                 val finalName = getDeviceName(device)
+                Log.d("GATT", "Central connected: $finalName ✅")
 
                 runOnUiThread {
                     messageSink?.success("CLIENT_CONNECTED:$finalName")
                 }
+
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 connectedCentrals.remove(device)
                 chunkBuffers.remove(device.address)
@@ -458,6 +492,7 @@ class MainActivity : FlutterActivity() {
     @SuppressLint("MissingPermission")
     override fun onDestroy() {
         stopGattServer()
+        releaseWakeLock()   // ← Always release on app destroy
         super.onDestroy()
     }
 }

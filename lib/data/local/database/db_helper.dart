@@ -150,6 +150,21 @@ class DbHelper {
     }
   }
 
+
+  static Future<void> clearMessagesForSender(String senderId) async {
+  try {
+    final db = await database;
+    await db.delete(
+      messagesTable,
+      where: 'senderId = ?',
+      whereArgs: [senderId],
+    );
+    AppLogger.info('Messages cleared for sender: $senderId', tag: 'DB');
+  } catch (e) {
+    AppLogger.error('Failed to clear messages for sender', tag: 'DB', error: e);
+  }
+}
+
   // ── Get message count ────────────────────────────────────────────
   static Future<int> getMessageCount() async {
     try {

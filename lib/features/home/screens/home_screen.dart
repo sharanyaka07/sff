@@ -26,7 +26,22 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         context.read<HomeController>().loadDashboard();
       }
+      // ── Show name prompt on first launch if no name saved ──────────
+      await _checkFirstLaunch();
     });
+  }
+
+  // ── Check if this is first launch (no name set yet) ───────────────
+  Future<void> _checkFirstLaunch() async {
+    final savedName = await UserPreferences.getUserName();
+    final isFirstLaunch = savedName.trim().isEmpty;
+    if (isFirstLaunch && mounted) {
+      // Small delay so the screen renders first
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (mounted) {
+        await _showFirstLaunchNameDialog(context);
+      }
+    }
   }
 
   String _getGreeting() {
@@ -36,7 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return 'Good Evening';
   }
 
-  // ── Fixed: uses widget.onTabSwitch callback ───────────────────────
   void _switchTab(int index) {
     widget.onTabSwitch?.call(index);
   }
@@ -331,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── SOS Shortcut (tappable → goes to SOS tab) ────────────────────
+  // ── SOS Shortcut ─────────────────────────────────────────────────
   Widget _buildSOSShortcut(SosController sos) {
     final isActive = sos.state == SosState.active;
     final isCountdown = sos.state == SosState.countdown;
@@ -436,7 +450,6 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 10),
         Row(
           children: [
-            // Scan Devices → triggers BT scan directly
             Expanded(
               child: _buildActionButton(
                 icon: Icons.bluetooth,
@@ -447,7 +460,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            // First Aid → tab 3
             Expanded(
               child: _buildActionButton(
                 icon: Icons.medical_services_outlined,
@@ -457,7 +469,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            // Chat → tab 1
             Expanded(
               child: _buildActionButton(
                 icon: Icons.chat_bubble_outline,
@@ -467,7 +478,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            // Emergency Contacts → tab 2 (SOS tab)
             Expanded(
               child: _buildActionButton(
                 icon: Icons.contacts_outlined,
@@ -628,7 +638,115 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Profile Dialog ───────────────────────────────────────────────
+  // ── First Launch Name Dialog (cannot be dismissed) ────────────────
+  Future<void> _showFirstLaunchNameDialog(BuildContext context) async {
+    final nameController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false, // ← cannot tap outside to dismiss
+      builder: (ctx) => PopScope(
+        canPop: false, // ← back button also disabled
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Column(
+            children: [
+              Icon(Icons.waving_hand, color: AppColors.primary, size: 40),
+              SizedBox(height: 8),
+              Text(
+                'Welcome to Safe Connect!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Please enter your name so others can identify you during emergencies.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: nameController,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    labelText: 'Your Name',
+                    hintText: 'e.g. Sharanya',
+                    prefixIcon: const Icon(Icons.person_outline),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) {
+                      return 'Please enter your name';
+                    }
+                    if (val.trim().length < 2) {
+                      return 'Name must be at least 2 characters';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () async {
+                  if (formKey.currentState!.validate()) {
+                    final name = nameController.text.trim();
+                    await UserPreferences.setUserName(name);
+                    if (ctx.mounted) {
+                      Navigator.pop(ctx);
+                      // Reload dashboard so greeting shows new name
+                      if (mounted) {
+                        context.read<HomeController>().loadDashboard();
+                      }
+                    }
+                  }
+                },
+                child: const Text(
+                  'Get Started →',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Profile Dialog (editable anytime via top-right icon) ──────────
   Future<void> _showProfileDialog(BuildContext context) async {
     final nameController = TextEditingController(
       text: context.read<HomeController>().userName,
@@ -658,11 +776,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await UserPreferences.setUserName(
-                  nameController.text.trim());
-              if (ctx.mounted) {
-                Navigator.pop(ctx);
-                context.read<HomeController>().loadDashboard();
+              final name = nameController.text.trim();
+              if (name.isNotEmpty) {
+                await UserPreferences.setUserName(name);
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                  context.read<HomeController>().loadDashboard();
+                }
               }
             },
             child: const Text('Save'),
