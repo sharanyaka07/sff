@@ -7,14 +7,19 @@ class MessageModel {
   final String id;
   final String senderId;
   final String senderName;
-  final String content;        // Always DECRYPTED for display
-  final String? encryptedContent; // The encrypted version
+  final String content;
+  final String? encryptedContent;
   final MessageType type;
   final MessageStatus status;
   final DateTime timestamp;
   final bool isMe;
   final int hopCount;
   final bool isEncrypted;
+
+  // ── conversationId: links a sent message to the peer it was sent to
+  // For received messages: equals senderId
+  // For sent messages: equals the peer's senderId at time of sending
+  final String conversationId;
 
   const MessageModel({
     required this.id,
@@ -28,16 +33,14 @@ class MessageModel {
     required this.isMe,
     this.hopCount = 0,
     this.isEncrypted = false,
+    this.conversationId = '',
   });
 
-  // ── Convert to JSON for sending over BLE ─────────────────────────
-  // NOTE: We send the ENCRYPTED content over the wire
   String toJson({String? encryptedPayload}) {
     return jsonEncode({
       'id': id,
       'senderId': senderId,
       'senderName': senderName,
-      // Send encrypted content if available, otherwise plain
       'content': encryptedPayload ?? content,
       'type': type.name,
       'timestamp': timestamp.toIso8601String(),
@@ -46,20 +49,20 @@ class MessageModel {
     });
   }
 
-  // ── Parse JSON received over BLE ─────────────────────────────────
   factory MessageModel.fromJson(String jsonStr, {
     bool isMe = false,
     String? decryptedContent,
+    String conversationId = '',
   }) {
     final map = jsonDecode(jsonStr) as Map<String, dynamic>;
     final rawContent = map['content'] as String;
     final wasEncrypted = map['isEncrypted'] as bool? ?? false;
+    final senderId = map['senderId'] as String;
 
     return MessageModel(
       id: map['id'] as String,
-      senderId: map['senderId'] as String,
+      senderId: senderId,
       senderName: map['senderName'] as String,
-      // Use decrypted content if provided, otherwise raw
       content: decryptedContent ?? rawContent,
       encryptedContent: wasEncrypted ? rawContent : null,
       type: MessageType.values.firstWhere(
@@ -71,10 +74,12 @@ class MessageModel {
       isMe: isMe,
       hopCount: map['hopCount'] as int? ?? 0,
       isEncrypted: wasEncrypted,
+      // For received messages, conversationId = senderId
+      conversationId: conversationId.isNotEmpty ? conversationId : senderId,
     );
   }
 
-  MessageModel copyWith({MessageStatus? status}) {
+  MessageModel copyWith({MessageStatus? status, String? conversationId}) {
     return MessageModel(
       id: id,
       senderId: senderId,
@@ -87,6 +92,7 @@ class MessageModel {
       isMe: isMe,
       hopCount: hopCount,
       isEncrypted: isEncrypted,
+      conversationId: conversationId ?? this.conversationId,
     );
   }
 }

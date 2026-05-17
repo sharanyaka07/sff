@@ -3,7 +3,6 @@ import '../../../data/local/models/message_model.dart';
 import '../../bluetooth/controllers/bluetooth_controller.dart';
 import '../../../core/utils/logger.dart';
 
-// ── Conversation model — one entry per unique sender ────────────────
 class Conversation {
   final String senderId;
   final String senderName;
@@ -11,7 +10,7 @@ class Conversation {
   final DateTime lastMessageTime;
   final bool lastMessageIsMe;
   final int unreadCount;
-  final bool isConnectedNow; // ← is this person currently connected?
+  final bool isConnectedNow;
 
   const Conversation({
     required this.senderId,
@@ -27,10 +26,7 @@ class Conversation {
 class ChatController extends ChangeNotifier {
   final BluetoothController _bt;
 
-  // ── Track unread counts per senderId ────────────────────────────
   final Map<String, int> _unreadCounts = {};
-
-  // ── Track previous message count to detect new arrivals ─────────
   int _prevMessageCount = 0;
 
   ChatController({required BluetoothController bluetoothController})
@@ -38,120 +34,140 @@ class ChatController extends ChangeNotifier {
     _bt.addListener(_onChanged);
   }
 
-  // ── All messages ─────────────────────────────────────────────────
   List<MessageModel> get allMessages => _bt.messages;
 
-  // ── Messages for a specific sender (both sent and received) ──────
-  List<MessageModel> messagesForSender(String senderId) {
-    return _bt.messages
-        .where((m) => m.isMe || m.senderId == senderId)
-        .toList()
+  // ── Messages for a specific conversation ─────────────────────────
+  // peerId is the peer's UUID (from handshake senderId).
+  //
+  // Sent messages match if:
+  //   - conversationId == peerId  (UUID stamped after handshake) ✅
+  //   - OR conversationId is a MAC that maps to this peerId via received msgs
+  //     (race: message sent before handshake arrived, MAC was used as convId)
+  //
+  // Received messages match if senderId == peerId.
+  List<MessageModel> messagesForSender(String peerId) {
+    // Build a set of all known conversationIds for this peer:
+    // their UUID + any MACs found on their received messages
+    final peerConvIds = <String>{peerId};
+
+    // Any MAC address that appeared as senderMac when we got their messages
+    // is also a valid convId for sent messages to them
+    // (We detect this by looking for received msgs whose senderId == peerId
+    //  and checking if we have sent msgs with a MAC convId that's not in
+    //  any other received sender's set — simpler: just accept MAC-format
+    //  convIds that don't belong to any OTHER known peer)
+    final otherPeerIds = _bt.messages
+        .where((m) => !m.isMe && m.senderId != peerId)
+        .map((m) => m.senderId)
+        .toSet();
+
+    return _bt.messages.where((m) {
+      if (m.isMe) {
+        // Sent message: show if convId matches this peer
+        if (peerConvIds.contains(m.conversationId)) return true;
+        // Also show if convId is a MAC-format that isn't claimed by another peer
+        if (m.conversationId.isNotEmpty &&
+            !otherPeerIds.contains(m.conversationId)) {
+          // It's either our peer's MAC or an unknown — include it
+          // (safe because we already exclude msgs with known other-peer IDs)
+          return true;
+        }
+        return false;
+      } else {
+        // Received message: show if it came from this peer
+        return m.senderId == peerId;
+      }
+    }).toList()
       ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
   }
 
   // ── Build conversation list ───────────────────────────────────────
-  // Shows:
-  // 1. Currently connected device (even with no messages yet)
-  // 2. Past conversations from message history
   List<Conversation> get conversations {
     final Map<String, Conversation> convMap = {};
 
-    // ── Step 1: Add currently connected device first ──────────────
-    // This ensures the chat option always shows when connected,
-    // even before any message has been sent or received.
-    final connectedId = _connectedPeerId;
+    // Step 1: Add currently connected peer
+    final connectedId   = _connectedPeerId;
     final connectedName = _connectedPeerName;
 
     if (connectedId.isNotEmpty) {
-      // Find last message with this peer if any
-      final peerMessages = _bt.messages
-          .where((m) => !m.isMe && m.senderId == connectedId)
-          .toList();
+      final msgs = messagesForSender(connectedId);
 
-      final myMessages = _bt.messages.where((m) => m.isMe).toList();
-      final allPeerConvo = [...peerMessages, ...myMessages]
-        ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-      String lastMsg = 'Tap to start chatting 💬';
+      String lastMsg   = 'Tap to start chatting 💬';
       DateTime lastTime = DateTime.now();
-      bool lastIsMe = false;
+      bool lastIsMe    = false;
 
-      if (allPeerConvo.isNotEmpty) {
-        final last = allPeerConvo.last;
-        lastMsg = last.isMe ? last.content : last.content;
+      if (msgs.isNotEmpty) {
+        final last = msgs.last;
+        lastMsg  = last.content;
         lastTime = last.timestamp;
         lastIsMe = last.isMe;
       }
 
       convMap[connectedId] = Conversation(
-        senderId: connectedId,
-        senderName: connectedName,
-        lastMessage: lastMsg,
+        senderId:        connectedId,
+        senderName:      connectedName,
+        lastMessage:     lastMsg,
         lastMessageTime: lastTime,
         lastMessageIsMe: lastIsMe,
-        unreadCount: _unreadCounts[connectedId] ?? 0,
-        isConnectedNow: true,
+        unreadCount:     _unreadCounts[connectedId] ?? 0,
+        isConnectedNow:  true,
       );
     }
 
-    // ── Step 2: Add past conversations from message history ────────
-    final senders = _bt.messages
+    // Step 2: Add past conversations from received message history
+    final senderIds = _bt.messages
         .where((m) => !m.isMe)
         .map((m) => m.senderId)
         .toSet();
 
-    for (final senderId in senders) {
-      if (convMap.containsKey(senderId)) continue; // already added
+    for (final peerId in senderIds) {
+      if (convMap.containsKey(peerId)) continue;
 
-      final convoMessages = messagesForSender(senderId);
-      if (convoMessages.isEmpty) continue;
+      final msgs = messagesForSender(peerId);
+      if (msgs.isEmpty) continue;
 
-      final lastMsg = convoMessages.last;
+      final lastMsg    = msgs.last;
       final senderName = _bt.messages
-          .firstWhere((m) => m.senderId == senderId)
+          .firstWhere((m) => m.senderId == peerId)
           .senderName;
 
-      convMap[senderId] = Conversation(
-        senderId: senderId,
-        senderName: senderName,
-        lastMessage: lastMsg.isMe
-            ? lastMsg.content
-            : lastMsg.content,
+      convMap[peerId] = Conversation(
+        senderId:        peerId,
+        senderName:      senderName,
+        lastMessage:     lastMsg.content,
         lastMessageTime: lastMsg.timestamp,
         lastMessageIsMe: lastMsg.isMe,
-        unreadCount: _unreadCounts[senderId] ?? 0,
-        isConnectedNow: false,
+        unreadCount:     _unreadCounts[peerId] ?? 0,
+        isConnectedNow:  false,
       );
     }
 
-    // Sort: connected first, then by most recent message
-    final result = convMap.values.toList()
+    // Sort: connected first, then most recent
+    return convMap.values.toList()
       ..sort((a, b) {
         if (a.isConnectedNow && !b.isConnectedNow) return -1;
         if (!a.isConnectedNow && b.isConnectedNow) return 1;
         return b.lastMessageTime.compareTo(a.lastMessageTime);
       });
-
-    return result;
   }
 
-  // ── Get connected peer's ID ───────────────────────────────────────
-  // Uses senderId from last received message, or device remoteId
+  // ── Connected peer ID — from handshake (UUID), not MAC ───────────
   String get _connectedPeerId {
     if (!_bt.isConnected) return '';
 
-    // Check if we have a recent message from someone
-    final received = _bt.messages.where((m) => !m.isMe).toList();
-    if (received.isNotEmpty) {
-      return received.last.senderId;
-    }
+    // Priority 1: peer UUID stored during handshake (most reliable)
+    if (_bt.connectedPeerId.isNotEmpty) return _bt.connectedPeerId;
 
-    // Fall back to connected device MAC as ID
+    // Priority 2: senderId from last received message
+    final received = _bt.messages.where((m) => !m.isMe).toList();
+    if (received.isNotEmpty) return received.last.senderId;
+
+    // Priority 3: outgoing device MAC
     if (_bt.connectedDevices.isNotEmpty) {
       return _bt.connectedDevices.first.remoteId.str;
     }
 
-    // Server-side: use connectedClientName as pseudo-ID
+    // Priority 4: server client pseudo-ID
     if (_bt.serverHasClients && _bt.connectedClientName.isNotEmpty) {
       return 'server_client_${_bt.connectedClientName}';
     }
@@ -159,50 +175,41 @@ class ChatController extends ChangeNotifier {
     return '';
   }
 
-  // ── Get connected peer's display name ────────────────────────────
+  // ── Connected peer name ───────────────────────────────────────────
   String get _connectedPeerName {
-    // 1. Handshake name (most reliable)
+    // Priority 1: name from received messages (always the real peer name)
+    final received = _bt.messages.where((m) => !m.isMe).toList();
+    if (received.isNotEmpty) return received.last.senderName;
+
+    // Priority 2: name from handshake (guaranteed not our own name)
     if (_bt.connectedClientName.isNotEmpty &&
         !_bt.connectedClientName.contains(':')) {
       return _bt.connectedClientName;
     }
 
-    // 2. Name from received messages
-    final received = _bt.messages.where((m) => !m.isMe).toList();
-    if (received.isNotEmpty) {
-      return received.last.senderName;
-    }
-
-    // 3. Platform name from connected devices
+    // Priority 3: platform name
     if (_bt.connectedDevices.isNotEmpty) {
       final d = _bt.connectedDevices.first;
       if (d.platformName.isNotEmpty) return d.platformName;
     }
 
-    // 4. connectedClientName even if it's MAC
-    if (_bt.connectedClientName.isNotEmpty) {
-      return _bt.connectedClientName;
-    }
-
+    if (_bt.connectedClientName.isNotEmpty) return _bt.connectedClientName;
     return 'Connected Device';
   }
 
-  // ── Mark conversation as read ────────────────────────────────────
   void markAsRead(String senderId) {
     _unreadCounts[senderId] = 0;
     notifyListeners();
   }
 
-  // ── Clear a single conversation ──────────────────────────────────
   void clearConversation(String senderId) {
     _bt.clearMessagesForSender(senderId);
     _unreadCounts.remove(senderId);
     notifyListeners();
   }
 
-  // ── Connection state ─────────────────────────────────────────────
-  bool get isConnected => _bt.isConnected;
-  bool get isOnline => false;
+  bool get isConnected          => _bt.isConnected;
+  bool get isOnline             => false;
   bool get isBluetoothConnected => _bt.isConnected;
 
   List<String> get recentSenders => _bt.messages
@@ -213,17 +220,14 @@ class ChatController extends ChangeNotifier {
 
   String get connectedDeviceName => _connectedPeerName;
 
-  String get modeLabel {
-    if (isConnected) return '🔵 Bluetooth Connected';
-    return '⚠️ Not Connected';
-  }
+  String get modeLabel => isConnected
+      ? '🔵 Bluetooth Connected'
+      : '⚠️ Not Connected';
 
-  String get modeSubLabel {
-    if (isConnected) return 'Connected to $connectedDeviceName';
-    return 'Go to Bluetooth tab → tap a device to connect';
-  }
+  String get modeSubLabel => isConnected
+      ? 'Connected to $connectedDeviceName'
+      : 'Go to Bluetooth tab → tap a device to connect';
 
-  // ── Send message ─────────────────────────────────────────────────
   Future<bool> sendMessage(String content) async {
     if (content.trim().isEmpty) return false;
     if (!isConnected) {
@@ -233,22 +237,17 @@ class ChatController extends ChangeNotifier {
     return _bt.sendMessage(content);
   }
 
-  // ── Listener: track unread counts ───────────────────────────────
   void _onChanged() {
     final currentCount = _bt.messages.length;
-
     if (currentCount > _prevMessageCount) {
-      // New messages arrived — increment unread for received ones
-      final newMessages =
-          _bt.messages.skip(_prevMessageCount).toList();
-      for (final msg in newMessages) {
+      final newMsgs = _bt.messages.skip(_prevMessageCount).toList();
+      for (final msg in newMsgs) {
         if (!msg.isMe) {
           _unreadCounts[msg.senderId] =
               (_unreadCounts[msg.senderId] ?? 0) + 1;
         }
       }
     }
-
     _prevMessageCount = currentCount;
     notifyListeners();
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/user_preferences.dart';
 import '../../bluetooth/controllers/bluetooth_controller.dart';
@@ -26,18 +27,28 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         context.read<HomeController>().loadDashboard();
       }
-      // ── Show name prompt on first launch if no name saved ──────────
       await _checkFirstLaunch();
     });
   }
 
-  // ── Check if this is first launch (no name set yet) ───────────────
+  // ── Check first launch using a dedicated flag ─────────────────────
   Future<void> _checkFirstLaunch() async {
-    final savedName = await UserPreferences.getUserName();
-    final isFirstLaunch = savedName.trim().isEmpty;
-    if (isFirstLaunch && mounted) {
-      // Small delay so the screen renders first
-      await Future.delayed(const Duration(milliseconds: 400));
+    final prefs = await SharedPreferences.getInstance();
+
+    // ── Migration for existing users ──────────────────────────────────
+    // If they already had a real name before this flag existed,
+    // mark as done so the dialog doesn't pop up on update
+    final existingName = await UserPreferences.getUserName();
+    final looksReal = existingName.trim().isNotEmpty &&
+        !existingName.startsWith('User_');
+    if (looksReal) {
+      await prefs.setBool('has_set_name', true);
+    }
+
+    final hasSetName = prefs.getBool('has_set_name') ?? false;
+
+    if (!hasSetName && mounted) {
+      await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) {
         await _showFirstLaunchNameDialog(context);
       }
@@ -110,8 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -124,11 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.shield,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+                        child: const Icon(Icons.shield, color: Colors.white, size: 20),
                       ),
                       const SizedBox(width: 10),
                       const Text(
@@ -152,10 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const Text(
                     'Stay safe, stay connected',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],
               ),
@@ -236,10 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   const Text(
                     'Bluetooth Mesh',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                   ),
                   Text(
                     statusText,
@@ -255,11 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             else
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 14,
-                color: AppColors.textHint,
-              ),
+              const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textHint),
           ],
         ),
       ),
@@ -335,10 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-            ),
+            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -370,11 +363,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: Row(
           children: [
-            const Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.white,
-              size: 40,
-            ),
+            const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 40),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -393,21 +382,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   Text(
-                    isActive
-                        ? 'Help is on the way'
-                        : 'Tap to go to SOS screen',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                    ),
+                    isActive ? 'Help is on the way' : 'Tap to go to SOS screen',
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],
               ),
             ),
             if (isActive)
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -422,11 +405,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )
             else
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: Colors.white54,
-                size: 16,
-              ),
+              const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
           ],
         ),
       ),
@@ -455,8 +434,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.bluetooth,
                 label: 'Scan\nDevices',
                 color: AppColors.bluetooth,
-                onTap: () =>
-                    context.read<BluetoothController>().startScan(),
+                onTap: () => context.read<BluetoothController>().startScan(),
               ),
             ),
             const SizedBox(width: 10),
@@ -557,8 +535,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: const Column(
               children: [
-                Icon(Icons.check_circle_outline,
-                    size: 36, color: AppColors.success),
+                Icon(Icons.check_circle_outline, size: 36, color: AppColors.success),
                 SizedBox(height: 8),
                 Text(
                   'No SOS alerts sent',
@@ -569,10 +546,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 Text(
                   'You\'re safe! 🙏',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textHint,
-                  ),
+                  style: TextStyle(fontSize: 12, color: AppColors.textHint),
                 ),
               ],
             ),
@@ -590,8 +564,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: AppColors.danger.withValues(alpha: 0.15)),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
@@ -601,8 +574,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: AppColors.danger.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.warning_amber_rounded,
-                color: AppColors.danger, size: 16),
+            child: const Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 16),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -611,27 +583,18 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   'SOS by ${log.userName}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                 ),
                 Text(
                   log.formattedDate,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textHint,
-                  ),
+                  style: const TextStyle(fontSize: 11, color: AppColors.textHint),
                 ),
               ],
             ),
           ),
           Text(
             log.channelsSummary,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-            ),
+            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -645,13 +608,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     await showDialog(
       context: context,
-      barrierDismissible: false, // ← cannot tap outside to dismiss
+      barrierDismissible: false,
       builder: (ctx) => PopScope(
-        canPop: false, // ← back button also disabled
+        canPop: false,
         child: AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Column(
             children: [
               Icon(Icons.waving_hand, color: AppColors.primary, size: 40),
@@ -659,10 +620,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 'Welcome to Safe Connect!',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -722,21 +680,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (formKey.currentState!.validate()) {
                     final name = nameController.text.trim();
                     await UserPreferences.setUserName(name);
+
+                    // ── Mark that user has set their name ─────────────
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('has_set_name', true);
+
                     if (ctx.mounted) {
                       Navigator.pop(ctx);
-                      // Reload dashboard so greeting shows new name
                       if (mounted) {
                         context.read<HomeController>().loadDashboard();
+                        // Also update BluetoothController with new name
+                        context.read<BluetoothController>().initialize();
                       }
                     }
                   }
                 },
                 child: const Text(
                   'Get Started →',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -746,7 +707,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Profile Dialog (editable anytime via top-right icon) ──────────
+  // ── Profile Dialog ─────────────────────────────────────────────────
   Future<void> _showProfileDialog(BuildContext context) async {
     final nameController = TextEditingController(
       text: context.read<HomeController>().userName,
@@ -779,6 +740,8 @@ class _HomeScreenState extends State<HomeScreen> {
               final name = nameController.text.trim();
               if (name.isNotEmpty) {
                 await UserPreferences.setUserName(name);
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('has_set_name', true);
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
                   context.read<HomeController>().loadDashboard();
