@@ -31,24 +31,34 @@ class BluetoothController extends ChangeNotifier {
   static const String serviceUuid = '12345678-1234-1234-1234-123456789abc';
   static const String charUuid    = 'abcd1234-1234-1234-1234-abcdef123456';
 
+  // ── SOS BLE advertisement constants ───────────────────────────
+  // Must match BleBroadcastService exactly
+  static const String _sosBroadcastServiceUuid =
+      'DEAD0000-BEEF-1234-5678-ABCDEF000001';
+  static const int _sosManufacturerId = 0x5053;
+  // ASCII bytes for 'SOS'
+  static const int _sosByte0 = 0x53; // 'S'
+  static const int _sosByte1 = 0x4F; // 'O'
+  static const int _sosByte2 = 0x53; // 'S'
+
   static final _macRegex =
       RegExp(r'^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$');
 
   static const int _maxReconnectAttempts = 5;
-  final Map<String, int>            _reconnectAttempts = {};
-  final Map<String, BluetoothDevice> _reconnectTargets = {};
-  final Map<String, Timer>           _reconnectTimers  = {};
+  final Map<String, int>             _reconnectAttempts = {};
+  final Map<String, BluetoothDevice> _reconnectTargets  = {};
+  final Map<String, Timer>           _reconnectTimers   = {};
 
   BtConnectionState _state = BtConnectionState.unknown;
   BtConnectionState get state => _state;
 
   final List<ScanResult>      _scanResults      = [];
   final List<BluetoothDevice> _connectedDevices = [];
-  final Map<String, BluetoothCharacteristic> _writeChars = {};
-  final Map<String, StringBuffer> _chunkBuffers   = {};
-  final Map<String, int>          _expectedChunks = {};
-  final Map<String, int>          _receivedChunks = {};
-  final List<MessageModel>        _messages       = [];
+  final Map<String, BluetoothCharacteristic> _writeChars     = {};
+  final Map<String, StringBuffer>            _chunkBuffers   = {};
+  final Map<String, int>                     _expectedChunks = {};
+  final Map<String, int>                     _receivedChunks = {};
+  final List<MessageModel>                   _messages       = [];
 
   List<ScanResult>      get scanResults      => List.unmodifiable(_scanResults);
   List<ScanResult>      get namedScanResults => List.unmodifiable(_scanResults);
@@ -60,7 +70,7 @@ class BluetoothController extends ChangeNotifier {
   String get deviceName => _deviceName;
   String get deviceId   => _deviceId;
 
-  bool _isScanning      = false;
+  bool _isScanning       = false;
   bool _serverHasClients = false;
   bool get isScanning       => _isScanning;
   bool get serverHasClients => _serverHasClients;
@@ -68,24 +78,15 @@ class BluetoothController extends ChangeNotifier {
   bool get isAdvertising    => true;
 
   // ── Name caches (peer names only — never own name) ────────────
-  final Map<String, String> _clientNames = {}; // senderId → name
-  final Map<String, String> _macToName   = {}; // MAC      → name
+  final Map<String, String> _clientNames = {};
+  final Map<String, String> _macToName   = {};
 
-  // ── connectedClientName: peer's name from handshake ───────────
   String _connectedClientName = '';
   String get connectedClientName => _connectedClientName;
 
-  // ── connectedPeerId: peer's senderId from handshake ───────────
-  // Used to stamp conversationId on outgoing messages.
-  // Set from EITHER direction:
-  //   - We receive their handshake (they connected to us as server)
-  //   - We connect to them (client role) and their handshake arrives
-  //   - Fallback: use their device MAC until handshake arrives
   String _connectedPeerId = '';
   String get connectedPeerId => _connectedPeerId;
 
-  // ── MAC of the device we connected TO (client role) ──────────
-  // Used as a fallback conversationId before the peer's handshake arrives
   String _connectedDeviceMac = '';
 
   Timer? _heartbeatTimer;
@@ -94,9 +95,16 @@ class BluetoothController extends ChangeNotifier {
   StreamSubscription? _scanSubscription;
   StreamSubscription? _adapterStateSubscription;
   StreamSubscription? _nativeMessageSubscription;
+
+  // ── Passive SOS scan ──────────────────────────────────────────
+  StreamSubscription? _sosScanSubscription;
+  bool _isSosScanning = false;
+  // Tracks already-alerted devices to avoid notification spam
+  final Set<String> _alertedSosDevices = {};
+
   bool _isInitialized = false;
 
-  // ── Init ──────────────────────────────────────────────────────
+  // ── Init ─────────────────────────────────────────────────────
   Future<void> initialize() async {
     if (_isInitialized) return;
     _isInitialized = true;
@@ -105,6 +113,7 @@ class BluetoothController extends ChangeNotifier {
     await _loadMessagesFromDb();
     await _startNativeGattServer();
     _listenForNativeMessages();
+    await startPassiveSosScan();
     AppLogger.bluetooth('BluetoothController ready. Name: $_deviceName');
   }
 
@@ -115,6 +124,143 @@ class BluetoothController extends ChangeNotifier {
     } catch (e) {
       AppLogger.error('Failed to start GATT server', error: e);
     }
+  }
+
+  // ── Passive SOS Scan ─────────────────────────────────────────
+  // Runs continuously in background, battery-friendly (lowPower mode).
+  // Filters by SOS service UUID so only SOS broadcasts wake it up.
+  Future<void> startPassiveSosScan() async {
+    if (_isSosScanning) return;
+
+    AppLogger.bluetooth('Starting passive SOS scan...');
+
+    try {
+      await _sosScanSubscription?.cancel();
+      _sosScanSubscription = null;
+
+      _sosScanSubscription = FlutterBluePlus.scanResults.listen(
+        (results) {
+          for (final result in results) {
+            _checkForSosPayload(result);
+          }
+        },
+        onError: (e) {
+          AppLogger.error('Passive SOS scan stream error', error: e);
+        },
+      );
+
+      await FlutterBluePlus.startScan(
+        androidScanMode: AndroidScanMode.lowPower, // battery-friendly background scan
+        continuousUpdates: true,
+        // Filter by SOS service UUID — only wakes up for SOS broadcasts
+        withServices: [Guid(_sosBroadcastServiceUuid)],
+      );
+
+      _isSosScanning = true;
+      AppLogger.bluetooth('Passive SOS scan active ✅');
+    } catch (e) {
+      AppLogger.error('Failed to start passive SOS scan', error: e);
+    }
+  }
+
+  Future<void> stopPassiveSosScan() async {
+    if (!_isSosScanning) return;
+    await _sosScanSubscription?.cancel();
+    _sosScanSubscription = null;
+    _isSosScanning = false;
+    AppLogger.bluetooth('Passive SOS scan stopped');
+  }
+
+  // ── Decode SOS binary payload from BleBroadcastService ───────
+  // BleBroadcastService encodes:
+  //   bytes[0..2] = 0x53, 0x4F, 0x53  ('SOS' in ASCII)
+  //   bytes[3..6] = lat * 10000 as int32 big-endian
+  //   bytes[7..10] = lng * 10000 as int32 big-endian
+  void _checkForSosPayload(ScanResult result) {
+    final deviceId   = result.device.remoteId.str;
+    final deviceName = _getDeviceName(result);
+
+    // Skip own device
+    if (deviceName == _deviceName) return;
+
+    // ── Primary: manufacturer data with ID 0x5053 ──────────────
+    final manufacturerData = result.advertisementData.manufacturerData;
+    final sosBytes = manufacturerData[_sosManufacturerId];
+
+    if (sosBytes != null && sosBytes.length >= 3) {
+      if (sosBytes[0] == _sosByte0 &&
+          sosBytes[1] == _sosByte1 &&
+          sosBytes[2] == _sosByte2) {
+
+        double? latitude;
+        double? longitude;
+
+        // Decode lat/lng if present (11 bytes total)
+        if (sosBytes.length >= 11) {
+          // Reconstruct signed int32 from 4 bytes big-endian
+          int lat = (sosBytes[3] << 24) |
+                    (sosBytes[4] << 16) |
+                    (sosBytes[5] << 8)  |
+                     sosBytes[6];
+          int lng = (sosBytes[7] << 24) |
+                    (sosBytes[8] << 16) |
+                    (sosBytes[9] << 8)  |
+                     sosBytes[10];
+
+          // Handle negative values (two's complement for signed int32)
+          if (lat >= 0x80000000) lat -= 0x100000000;
+          if (lng >= 0x80000000) lng -= 0x100000000;
+
+          latitude  = lat / 10000.0;
+          longitude = lng / 10000.0;
+        }
+
+        _triggerSosNotification(
+          senderName: deviceName,
+          latitude: latitude,
+          longitude: longitude,
+          deviceId: deviceId,
+        );
+        return;
+      }
+    }
+
+    // ── Fallback: detect by service UUID alone ─────────────────
+    final serviceUuids = result.advertisementData.serviceUuids;
+    for (final uuid in serviceUuids) {
+      if (uuid.toString().toUpperCase().contains('DEAD0000')) {
+        _triggerSosNotification(
+          senderName: deviceName,
+          latitude: null,
+          longitude: null,
+          deviceId: deviceId,
+        );
+        return;
+      }
+    }
+  }
+
+  void _triggerSosNotification({
+    required String senderName,
+    required double? latitude,
+    required double? longitude,
+    required String deviceId,
+  }) {
+    // Avoid repeated alerts for the same device within 5 minutes
+    if (_alertedSosDevices.contains(deviceId)) return;
+    _alertedSosDevices.add(deviceId);
+    Timer(const Duration(minutes: 5), () => _alertedSosDevices.remove(deviceId));
+
+    final locationText = (latitude != null && longitude != null)
+        ? 'Location: ${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}'
+        : '';
+
+    AppLogger.bluetooth('🆘 SOS detected from $senderName! $locationText');
+
+    NotificationService.showSosAlert(
+      senderName: senderName,
+      location: locationText,
+    );
   }
 
   void _listenForNativeMessages() {
@@ -134,7 +280,6 @@ class BluetoothController extends ChangeNotifier {
         } else {
           _connectedClientName = clientAddress;
         }
-        // Store MAC as fallback conversationId until handshake arrives
         if (_connectedPeerId.isEmpty) {
           _connectedDeviceMac = clientAddress;
         }
@@ -183,6 +328,31 @@ class BluetoothController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> refreshDeviceName() async {
+    final prefs = await SharedPreferences.getInstance();
+    final newName = prefs.getString('user_name') ?? 'User_${_shortId()}';
+
+    if (newName != _deviceName) {
+      _deviceName = newName;
+      AppLogger.bluetooth('Device name updated to: $_deviceName');
+
+      for (final device in _connectedDevices) {
+        final char = _writeChars[device.remoteId.str];
+        if (char != null) {
+          await _sendHandshake(char);
+        }
+      }
+
+      try {
+        await _gattChannel.invokeMethod('updateDeviceName', {'name': _deviceName});
+      } catch (e) {
+        AppLogger.error('Failed to update native server name', error: e);
+      }
+
+      notifyListeners();
+    }
+  }
+
   String _shortId() =>
       DateTime.now().millisecondsSinceEpoch.toString().substring(8);
 
@@ -192,9 +362,11 @@ class BluetoothController extends ChangeNotifier {
       if (state == BluetoothAdapterState.on) {
         _setState(BtConnectionState.idle);
         _startNativeGattServer();
+        startPassiveSosScan(); // Restart when BT turns back on
       } else if (state == BluetoothAdapterState.off) {
         _cancelAllReconnects();
         _heartbeatTimer?.cancel();
+        _isSosScanning = false;
         _setState(BtConnectionState.off);
         _scanResults.clear();
         _connectedDevices.clear();
@@ -238,6 +410,9 @@ class BluetoothController extends ChangeNotifier {
   Future<void> startScan() async {
     if (_isScanning) return;
 
+    // Stop passive SOS scan — FlutterBluePlus can only run one scan at a time
+    await stopPassiveSosScan();
+
     await Permission.locationWhenInUse.request();
     await Permission.bluetoothScan.request();
     await Permission.bluetoothConnect.request();
@@ -254,6 +429,7 @@ class BluetoothController extends ChangeNotifier {
       }
       _setState(BtConnectionState.off);
       notifyListeners();
+      await startPassiveSosScan(); // Restart passive scan
       return;
     }
 
@@ -266,6 +442,7 @@ class BluetoothController extends ChangeNotifier {
         await Future.delayed(const Duration(seconds: 2));
       } catch (e) {
         AppLogger.error('Could not turn on Bluetooth', error: e);
+        await startPassiveSosScan();
         return;
       }
     }
@@ -282,8 +459,11 @@ class BluetoothController extends ChangeNotifier {
         (results) {
           bool changed = false;
           for (final result in results) {
+            // Always check for SOS even during active device scan
+            _checkForSosPayload(result);
+
             final resultName = _getDeviceName(result);
-            if (resultName == _deviceName) continue; // skip own device
+            if (resultName == _deviceName) continue;
 
             final idx = _scanResults.indexWhere(
               (r) => r.device.remoteId == result.device.remoteId,
@@ -292,10 +472,6 @@ class BluetoothController extends ChangeNotifier {
               _scanResults.add(result);
               changed = true;
               AppLogger.bluetooth('Found: $resultName | RSSI: ${result.rssi}');
-              NotificationService.showBluetoothDeviceFound(
-                deviceName: resultName,
-                deviceCount: _scanResults.length,
-              );
             } else {
               final existingName = _getDeviceName(_scanResults[idx]);
               if (_macRegex.hasMatch(existingName) &&
@@ -312,9 +488,11 @@ class BluetoothController extends ChangeNotifier {
 
       await FlutterBluePlus.startScan(
         timeout: const Duration(seconds: 30),
-        androidUsesFineLocation: true,
+        androidScanMode: AndroidScanMode.lowLatency,
         continuousUpdates: true,
-        withServices: [Guid(serviceUuid)],
+        // No service filter — we filter by name in the results listener
+        // Service UUID filtering is unreliable on Android; many phones
+        // don't include custom UUIDs in scan responses
       );
 
       await FlutterBluePlus.isScanning
@@ -328,6 +506,9 @@ class BluetoothController extends ChangeNotifier {
       _setState(BtConnectionState.idle);
       notifyListeners();
     }
+
+    // Always restart passive SOS scan after active scan ends
+    await startPassiveSosScan();
   }
 
   Future<void> stopScan() async {
@@ -363,7 +544,7 @@ class BluetoothController extends ChangeNotifier {
         AppLogger.bluetooth('MTU: $mtu bytes ✅');
       } catch (_) {}
 
-      await Future.delayed(const Duration(milliseconds: 300));
+      await Future.delayed(const Duration(milliseconds: 500));
 
       final services = await device.discoverServices();
       BluetoothCharacteristic? targetChar;
@@ -397,13 +578,12 @@ class BluetoothController extends ChangeNotifier {
       _reconnectTargets[device.remoteId.str] = device;
       _reconnectAttempts[device.remoteId.str] = 0;
 
-      // Store the MAC as fallback conversationId until peer handshake arrives
       _connectedDeviceMac = device.remoteId.str;
 
       _setState(BtConnectionState.connected);
       notifyListeners();
 
-      await Future.delayed(const Duration(milliseconds: 300));
+      await Future.delayed(const Duration(milliseconds: 800));
       await _sendHandshake(targetChar);
       _startHeartbeat(device, targetChar);
 
@@ -525,13 +705,6 @@ class BluetoothController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Send message ─────────────────────────────────────────────────
-  // conversationId resolution order:
-  //   1. _connectedPeerId  — peer's UUID from handshake (most reliable)
-  //   2. _connectedDeviceMac — MAC of device we connected to (client role)
-  //   3. _connectedClientName — name fallback (server role before handshake)
-  // This ensures sent messages ALWAYS have a non-empty conversationId
-  // that matches what _processReceivedMessage stores as senderId.
   Future<bool> sendMessage(String content) async {
     if (!isConnected) return false;
 
@@ -539,30 +712,27 @@ class BluetoothController extends ChangeNotifier {
       final encrypted = EncryptionService.encrypt(content);
       final msgId     = const Uuid().v4();
 
-      // Resolve the best available conversationId
       String convId = '';
       if (_connectedPeerId.isNotEmpty) {
-        convId = _connectedPeerId;          // UUID from handshake ✅
+        convId = _connectedPeerId;
       } else if (_connectedDeviceMac.isNotEmpty) {
-        convId = _connectedDeviceMac;       // MAC fallback (client role)
+        convId = _connectedDeviceMac;
       } else if (_connectedClientName.isNotEmpty) {
-        convId = _connectedClientName;      // name fallback (server role)
+        convId = _connectedClientName;
       }
 
-      AppLogger.bluetooth('sendMessage: convId="$convId" peerId="$_connectedPeerId" mac="$_connectedDeviceMac"');
-
       final message = MessageModel(
-        id:             msgId,
-        senderId:       _deviceId,
-        senderName:     _deviceName,
-        content:        content,
+        id:               msgId,
+        senderId:         _deviceId,
+        senderName:       _deviceName,
+        content:          content,
         encryptedContent: encrypted,
-        type:           MessageType.text,
-        status:         MessageStatus.sending,
-        timestamp:      DateTime.now(),
-        isMe:           true,
-        isEncrypted:    true,
-        conversationId: convId,
+        type:             MessageType.text,
+        status:           MessageStatus.sending,
+        timestamp:        DateTime.now(),
+        isMe:             true,
+        isEncrypted:      true,
+        conversationId:   convId,
       );
 
       _messages.add(message);
@@ -673,16 +843,13 @@ class BluetoothController extends ChangeNotifier {
         final senderName = map['senderName'] as String? ?? 'Unknown';
         final senderId   = map['senderId']   as String? ?? '';
 
-        // Only cache peer names — never our own
         if (senderId != _deviceId && senderName != _deviceName) {
           if (senderId.isNotEmpty) {
             _clientNames[senderId] = senderName;
-            _connectedPeerId       = senderId; // ← peer UUID now known
+            _connectedPeerId       = senderId;
 
-            // Also map MAC → UUID so existing MAC-based convIds get resolved
             if (senderMac != null) {
               _macToName[senderMac] = senderName;
-              // Update any sent messages that used MAC as convId
               _upgradeMacConvIds(senderMac, senderId);
             }
           }
@@ -721,18 +888,29 @@ class BluetoothController extends ChangeNotifier {
         timestamp:      DateTime.parse(map['timestamp'] as String),
         isMe:           false,
         isEncrypted:    wasEncrypted,
-        conversationId: senderId, // received msg: conversationId = senderId ✅
+        conversationId: senderId,
       );
 
       _messages.add(message);
       DbHelper.insertMessage(message, channel: 'bluetooth');
       AppLogger.bluetooth('✅ Message from $senderName');
 
-      NotificationService.showMessageNotification(
-        senderName: senderName,
-        message:    displayContent,
-        channel:    'bluetooth',
-      );
+      // Show SOS alert if the message content is an SOS
+      if (displayContent.contains('SOS ALERT')) {
+        final senderId2 = map['senderId'] as String? ?? senderMac ?? '';
+        _triggerSosNotification(
+          senderName: senderName,
+          latitude: null,
+          longitude: null,
+          deviceId: senderId2,
+        );
+      } else {
+        NotificationService.showMessageNotification(
+          senderName: senderName,
+          message:    displayContent,
+          channel:    'bluetooth',
+        );
+      }
 
       notifyListeners();
     } catch (e) {
@@ -740,8 +918,6 @@ class BluetoothController extends ChangeNotifier {
     }
   }
 
-  // ── When handshake reveals peer UUID, upgrade any sent messages
-  // that used the MAC address as conversationId (timing race fix) ──
   void _upgradeMacConvIds(String mac, String peerId) {
     bool changed = false;
     for (int i = 0; i < _messages.length; i++) {
@@ -752,7 +928,6 @@ class BluetoothController extends ChangeNotifier {
       }
     }
     if (changed) {
-      // Persist upgrades to DB
       for (final m in _messages) {
         if (m.isMe && m.conversationId == peerId) {
           DbHelper.insertMessage(m, channel: 'bluetooth');
@@ -795,11 +970,24 @@ class BluetoothController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearConversationIds(Set<String> convIds) {
+    _messages.removeWhere(
+      (m) =>
+          convIds.contains(m.senderId) ||
+          convIds.contains(m.conversationId),
+    );
+    for (final id in convIds) {
+      DbHelper.clearMessagesForSender(id);
+    }
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _cancelAllReconnects();
     _heartbeatTimer?.cancel();
     _scanSubscription?.cancel();
+    _sosScanSubscription?.cancel();
     _adapterStateSubscription?.cancel();
     _nativeMessageSubscription?.cancel();
     _gattChannel.invokeMethod('stopGattServer').catchError((_) {});

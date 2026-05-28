@@ -33,9 +33,7 @@ class _SosHistoryScreenState extends State<SosHistoryScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Clear SOS History?'),
-        content: const Text(
-          'This will delete all SOS logs permanently.',
-        ),
+        content: const Text('This will delete all SOS logs permanently.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -60,6 +58,7 @@ class _SosHistoryScreenState extends State<SosHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background, // ← explicit
       appBar: AppBar(
         backgroundColor: AppColors.danger,
         title: const Text('SOS History'),
@@ -105,10 +104,7 @@ class _SosHistoryScreenState extends State<SosHistoryScreen> {
           Text(
             'SOS alerts you send will\nappear here',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textHint,
-            ),
+            style: TextStyle(fontSize: 14, color: AppColors.textHint),
           ),
         ],
       ),
@@ -124,19 +120,17 @@ class _SosLogCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: AppColors.surface, // ← explicit dark surface
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: AppColors.danger.withValues(alpha: 0.2),
-        ),
+        side: BorderSide(color: AppColors.danger.withValues(alpha: 0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               children: [
                 Container(
@@ -145,11 +139,8 @@ class _SosLogCard extends StatelessWidget {
                     color: AppColors.danger.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.warning_amber_rounded,
-                    color: AppColors.danger,
-                    size: 20,
-                  ),
+                  child: const Icon(Icons.warning_amber_rounded,
+                      color: AppColors.danger, size: 20),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -161,6 +152,7 @@ class _SosLogCard extends StatelessWidget {
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
+                          color: AppColors.textPrimary, // ← explicit
                         ),
                       ),
                       Text(
@@ -175,9 +167,7 @@ class _SosLogCard extends StatelessWidget {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                      horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -194,25 +184,20 @@ class _SosLogCard extends StatelessWidget {
               ],
             ),
 
-            const Divider(height: 20),
+            const Divider(height: 20, color: AppColors.border), // ← themed
 
-            // Channels
             Row(
               children: [
-                const Icon(Icons.send,
-                    size: 14, color: AppColors.textSecondary),
+                const Icon(Icons.send, size: 14, color: AppColors.textSecondary),
                 const SizedBox(width: 6),
                 Text(
                   'Sent via: ${log.channelsSummary}',
                   style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
+                      fontSize: 13, color: AppColors.textSecondary),
                 ),
               ],
             ),
 
-            // Location
             if (log.latitude != null) ...[
               const SizedBox(height: 6),
               Row(
@@ -225,9 +210,7 @@ class _SosLogCard extends StatelessWidget {
                       '${log.latitude!.toStringAsFixed(4)}, '
                       '${log.longitude!.toStringAsFixed(4)}',
                       style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
+                          fontSize: 13, color: AppColors.textSecondary),
                     ),
                   ),
                 ],

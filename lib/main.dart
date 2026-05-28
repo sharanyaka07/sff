@@ -15,7 +15,6 @@ import 'core/services/encryption_service.dart';
 import 'features/home/controllers/home_controller.dart';
 import 'core/services/notification_service.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'core/services/ble_scanner_service.dart';
 
 void main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -35,7 +34,6 @@ void main() async {
 
   EncryptionService.initialize();
   await NotificationService.initialize();
-  await BleScannerService.startListeningForSOS();
 
   FlutterNativeSplash.remove();
 
@@ -46,8 +44,9 @@ void main() async {
           create: (_) => ConnectivityService(),
           dispose: (_, s) => s.dispose(),
         ),
+        // ── FIXED: Don't call initialize() here — wait for permissions ──
         ChangeNotifierProvider<BluetoothController>(
-          create: (_) => BluetoothController()..initialize(),
+          create: (_) => BluetoothController(),
         ),
         ChangeNotifierProvider<FcmService>(
           create: (_) => FcmService(),
@@ -59,16 +58,22 @@ void main() async {
           update: (_, bluetooth, previous) =>
               previous ?? ChatController(bluetoothController: bluetooth),
         ),
-        ChangeNotifierProxyProvider<BluetoothController, SosController>(
+        ChangeNotifierProxyProvider2<BluetoothController, FcmService,
+            SosController>(
           create: (context) {
             final ctrl = SosController(
               bluetoothController: context.read<BluetoothController>(),
+              fcmService: context.read<FcmService>(),
             );
             ctrl.startMonitoring();
             return ctrl;
           },
-          update: (_, bluetooth, previous) =>
-              previous ?? SosController(bluetoothController: bluetooth),
+          update: (_, bluetooth, fcm, previous) =>
+              previous ??
+              SosController(
+                bluetoothController: bluetooth,
+                fcmService: fcm,
+              ),
         ),
         ChangeNotifierProvider<HomeController>(
           create: (_) => HomeController(),
@@ -90,19 +95,24 @@ class _SafeConnectAppState extends State<SafeConnectApp> {
   @override
   void initState() {
     super.initState();
-    // Request all permissions as soon as app starts
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // First request all permissions
+      // Step 1 — request all permissions FIRST
       await AppPermissions.requestAll(context);
 
-      // Then initialize FCM after permissions granted
-      if (mounted) {
-        final bt = context.read<BluetoothController>();
-        context.read<FcmService>().initialize(
-              deviceId: bt.deviceId,
-              deviceName: bt.deviceName,
-            );
-      }
+      if (!mounted) return;
+
+      // Step 2 — NOW initialize BluetoothController after permissions granted
+      // This ensures startPassiveSosScan() succeeds
+      await context.read<BluetoothController>().initialize();
+
+      if (!mounted) return;
+
+      // Step 3 — initialize FCM after BT is ready
+      final bt = context.read<BluetoothController>();
+      context.read<FcmService>().initialize(
+            deviceId: bt.deviceId,
+            deviceName: bt.deviceName,
+          );
     });
   }
 
@@ -111,7 +121,9 @@ class _SafeConnectAppState extends State<SafeConnectApp> {
     return MaterialApp(
       title: 'Safe Connect',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.darkTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.dark,
       home: const MainShell(),
     );
   }

@@ -47,9 +47,7 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
       } else {
         _filtered = _allContacts.where((c) {
           final name = c.displayName.toLowerCase();
-          final phone = ContactsSyncService
-              .getDisplayPhone(c)
-              .toLowerCase();
+          final phone = ContactsSyncService.getDisplayPhone(c).toLowerCase();
           return name.contains(query.toLowerCase()) ||
               phone.contains(query.toLowerCase());
         }).toList();
@@ -81,9 +79,7 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            '${contact.displayName} added to emergency contacts ✅',
-          ),
+          content: Text('${contact.displayName} added to emergency contacts ✅'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -93,6 +89,7 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.danger,
         title: const Text('Import from Phone'),
@@ -103,9 +100,16 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
             child: TextField(
               controller: _searchController,
               onChanged: _onSearch,
+              // ← FIX: explicit dark text so typed letters are visible
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 15,
+              ),
               decoration: InputDecoration(
                 hintText: 'Search contacts...',
-                prefixIcon: const Icon(Icons.search),
+                // ← FIX: explicit hint color so placeholder is visible too
+                hintStyle: const TextStyle(color: Colors.black45),
+                prefixIcon: const Icon(Icons.search, color: Colors.black54),
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
@@ -160,6 +164,7 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       subtitle: Text(

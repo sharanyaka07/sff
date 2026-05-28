@@ -85,11 +85,10 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.success,
         title: const Text('First Aid Guide'),
-        // ── Chatbot button added here ────────────────────────────
         actions: [
           IconButton(
             icon: const Icon(Icons.smart_toy, color: Colors.white),
@@ -150,11 +149,14 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                 child: TextField(
                   onChanged: _onSearch,
+                  style: const TextStyle(color: AppColors.textPrimary),
                   decoration: InputDecoration(
                     hintText: 'Search first aid guides...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
+                    hintStyle: const TextStyle(color: AppColors.textHint),
+                    prefixIcon: const Icon(Icons.search,
+                        size: 20, color: AppColors.textHint),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: AppColors.surfaceLight,
                     contentPadding:
                         const EdgeInsets.symmetric(vertical: 0),
                     border: OutlineInputBorder(
@@ -169,9 +171,12 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
         ),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary))
           : _filtered.isEmpty
-              ? const Center(child: Text('No guides found'))
+              ? const Center(
+                  child: Text('No guides found',
+                      style: TextStyle(color: AppColors.textSecondary)))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _filtered.length,
@@ -195,13 +200,13 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.surface,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
                               color: color.withValues(alpha: 0.3)),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
@@ -212,7 +217,7 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.1),
+                                color: color.withValues(alpha: 0.15),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -233,6 +238,7 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 15,
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(height: 3),
@@ -253,7 +259,7 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.1),
+                                color: color.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -344,6 +350,7 @@ class _FirstAidDetailScreen extends StatelessWidget {
     }
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: color,
         title: Text(_getText('title')),
@@ -355,8 +362,9 @@ class _FirstAidDetailScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.08),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
             ),
             child: Text(
               _getText('description'),
@@ -390,7 +398,7 @@ class _FirstAidDetailScreen extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                       color: color.withValues(alpha: 0.2)),
@@ -420,6 +428,7 @@ class _FirstAidDetailScreen extends StatelessWidget {
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           if (desc.isNotEmpty) ...[

@@ -18,7 +18,6 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
   @override
   void initState() {
     super.initState();
-    // Welcome message
     _addBotMessage(
       FirstAidResponses.getResponse('hello')!,
     );
@@ -41,7 +40,6 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
     _controller.clear();
     _scrollToBottom();
 
-    // Process after short delay for natural feel
     Future.delayed(const Duration(milliseconds: 500), () {
       final response = FirstAidResponses.getResponse(text) ??
           FirstAidResponses.getUnknownResponse(text);
@@ -64,6 +62,7 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.success,
         title: const Row(
@@ -88,10 +87,7 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
                 SizedBox(width: 4),
                 Text(
                   'Offline',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ],
             ),
@@ -100,10 +96,7 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
       ),
       body: Column(
         children: [
-          // Quick topic chips
           _buildQuickTopics(),
-
-          // Chat messages
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -117,8 +110,6 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
               },
             ),
           ),
-
-          // Input
           _buildInput(),
         ],
       ),
@@ -132,7 +123,7 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
     ];
     return Container(
       height: 44,
-      color: AppColors.success.withValues(alpha: 0.05),
+      color: AppColors.surface,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -146,10 +137,10 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
             padding: const EdgeInsets.symmetric(
                 horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
+              color: AppColors.success.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                  color: AppColors.success.withValues(alpha: 0.3)),
+                  color: AppColors.success.withValues(alpha: 0.4)),
             ),
             child: Text(
               topic,
@@ -171,10 +162,9 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12, left: 60),
         padding: const EdgeInsets.all(12),
-        // ignore: prefer_const_constructors
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.primary,
-          borderRadius: const BorderRadius.only(
+          borderRadius: BorderRadius.only(
             topLeft: Radius.circular(16),
             topRight: Radius.circular(16),
             bottomLeft: Radius.circular(16),
@@ -182,7 +172,8 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
         ),
         child: Text(
           text,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
+          style: const TextStyle(
+              color: AppColors.background, fontSize: 14),
         ),
       ),
     );
@@ -196,7 +187,7 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16, right: 40),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(4),
             topRight: Radius.circular(16),
@@ -204,10 +195,10 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
             bottomRight: Radius.circular(16),
           ),
           border: Border.all(
-              color: severityColor.withValues(alpha: 0.3)),
+              color: severityColor.withValues(alpha: 0.35)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -222,7 +213,7 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
               padding: const EdgeInsets.symmetric(
                   horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: severityColor.withValues(alpha: 0.1),
+                color: severityColor.withValues(alpha: 0.15),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(4),
                   topRight: Radius.circular(16),
@@ -293,7 +284,7 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
                                     right: 8, top: 1),
                                 decoration: BoxDecoration(
                                   color: AppColors.success
-                                      .withValues(alpha: 0.15),
+                                      .withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Center(
@@ -312,7 +303,9 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
                             Expanded(
                               child: Text(
                                 e.value,
-                                style: const TextStyle(fontSize: 13),
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.textPrimary),
                               ),
                             ),
                           ],
@@ -351,8 +344,10 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.danger.withValues(alpha: 0.08),
+                        color: AppColors.danger.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: AppColors.danger.withValues(alpha: 0.3)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,8 +360,7 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
                                 letterSpacing: 1,
                               )),
                           const SizedBox(height: 4),
-                          ...response.callEmergency.map((c) =>
-                              Text(
+                          ...response.callEmergency.map((c) => Text(
                                 '• $c',
                                 style: const TextStyle(
                                   fontSize: 12,
@@ -390,10 +384,12 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
+        border: const Border(
+            top: BorderSide(color: AppColors.border, width: 1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -404,11 +400,13 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
           Expanded(
             child: TextField(
               controller: _controller,
+              style: const TextStyle(color: AppColors.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Ask about burns, CPR, bleeding...',
-                hintStyle: const TextStyle(fontSize: 13),
+                hintStyle: const TextStyle(
+                    fontSize: 13, color: AppColors.textHint),
                 filled: true,
-                fillColor: const Color(0xFFF5F5F5),
+                fillColor: AppColors.surfaceLight,
                 contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16, vertical: 10),
                 border: OutlineInputBorder(
@@ -423,7 +421,8 @@ class _FirstAidChatbotScreenState extends State<FirstAidChatbotScreen> {
           CircleAvatar(
             backgroundColor: AppColors.success,
             child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white, size: 18),
+              icon: const Icon(Icons.send,
+                  color: AppColors.background, size: 18),
               onPressed: _sendMessage,
             ),
           ),

@@ -15,8 +15,7 @@ class NotificationService {
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const initSettings =
-        InitializationSettings(android: androidSettings);
+    const initSettings = InitializationSettings(android: androidSettings);
 
     await _plugin.initialize(
       initSettings,
@@ -61,7 +60,8 @@ class NotificationService {
     );
 
     final androidPlugin = _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
 
     if (androidPlugin != null) {
       await androidPlugin.createNotificationChannel(sosChannel);
@@ -79,7 +79,12 @@ class NotificationService {
   }) async {
     if (!_initialized) await initialize();
 
-    const details = NotificationDetails(
+    // Build body text — show location if available
+    final body = location.isNotEmpty
+        ? '$senderName needs help! $location'
+        : '$senderName needs help! Location unavailable';
+
+    final details = NotificationDetails(
       android: AndroidNotificationDetails(
         'sos_channel',
         'SOS Alerts',
@@ -87,23 +92,29 @@ class NotificationService {
         importance: Importance.max,
         priority: Priority.max,
         icon: '@mipmap/ic_launcher',
-        color: Color(0xFFD32F2F),
+        color: const Color(0xFFD32F2F),
         playSound: true,
         enableVibration: true,
         ticker: 'SOS ALERT',
-        styleInformation: BigTextStyleInformation(''),
+        fullScreenIntent: true, // ← shows as heads-up popup on lock screen
+        styleInformation: BigTextStyleInformation(
+          body,
+          htmlFormatBigText: false,
+          contentTitle: '🆘 SOS ALERT!',
+          summaryText: 'Emergency alert from nearby device',
+        ),
       ),
     );
 
     await _plugin.show(
       1001,
       '🆘 SOS ALERT!',
-      '$senderName needs help! Location: $location',
+      body,
       details,
       payload: 'sos',
     );
 
-    AppLogger.sos('SOS notification shown ✅');
+    AppLogger.sos('SOS notification shown for $senderName ✅');
   }
 
   // ── Show Message Notification ────────────────────────────────────

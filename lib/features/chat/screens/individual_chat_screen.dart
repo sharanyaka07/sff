@@ -52,8 +52,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text('⚠️ No connection. Connect via Bluetooth first.'),
+          content: Text('⚠️ No connection. Connect via Bluetooth first.'),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -64,8 +63,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
   Widget build(BuildContext context) {
     return Consumer<ChatController>(
       builder: (context, chat, _) {
-        final messages =
-            chat.messagesForSender(widget.senderId);
+        final messages = chat.messagesForSender(widget.senderId);
         _scrollToBottom();
 
         return Scaffold(
@@ -75,8 +73,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor:
-                      Colors.white.withValues(alpha: 0.2),
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                   child: Text(
                     widget.senderName.isNotEmpty
                         ? widget.senderName[0].toUpperCase()
@@ -95,8 +92,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                     Text(
                       widget.senderName,
                       style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold),
+                          fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     Text(
                       chat.isBluetoothConnected
@@ -112,8 +108,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
             actions: [
               IconButton(
                 icon: const Icon(Icons.delete_outline),
-                onPressed: () =>
-                    _showClearDialog(context, chat),
+                onPressed: () => _showClearDialog(context, chat),
                 tooltip: 'Clear chat',
               ),
             ],
@@ -132,15 +127,12 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                           final msg = messages[index];
                           final prevMsg =
                               index > 0 ? messages[index - 1] : null;
-                          // Show date separator if day changed
                           final showDate = prevMsg == null ||
-                              !_isSameDay(
-                                  prevMsg.timestamp, msg.timestamp);
+                              !_isSameDay(prevMsg.timestamp, msg.timestamp);
                           return Column(
                             children: [
                               if (showDate)
-                                _DateSeparator(
-                                    date: msg.timestamp),
+                                _DateSeparator(date: msg.timestamp),
                               _MessageBubble(message: msg),
                             ],
                           );
@@ -165,8 +157,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
         children: [
           CircleAvatar(
             radius: 40,
-            backgroundColor:
-                AppColors.primary.withValues(alpha: 0.1),
+            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
             child: Text(
               widget.senderName.isNotEmpty
                   ? widget.senderName[0].toUpperCase()
@@ -191,8 +182,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
           const Text(
             'No messages yet.\nSay hello! 👋',
             textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: 13, color: AppColors.textHint),
+            style: TextStyle(fontSize: 13, color: AppColors.textHint),
           ),
         ],
       ),
@@ -201,15 +191,15 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
 
   Widget _buildInputBar(ChatController chat) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface, // ← was Colors.white
         boxShadow: [
           BoxShadow(
-              color: Colors.black12,
-              blurRadius: 8,
-              offset: Offset(0, -2)),
+            color: Colors.black.withValues(alpha: 0.2), // ← was Colors.black12
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
         ],
       ),
       child: Row(
@@ -218,12 +208,12 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
             child: TextField(
               controller: _textController,
               textCapitalization: TextCapitalization.sentences,
+              style: const TextStyle(color: AppColors.textPrimary), // ← explicit
               decoration: InputDecoration(
                 hintText: 'Message',
-                hintStyle:
-                    const TextStyle(color: AppColors.textHint),
+                hintStyle: const TextStyle(color: AppColors.textHint),
                 filled: true,
-                fillColor: const Color(0xFFF0F2F5),
+                fillColor: AppColors.surfaceLight, // ← was Color(0xFFF0F2F5)
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
@@ -238,8 +228,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
           CircleAvatar(
             backgroundColor: AppColors.primary,
             child: IconButton(
-              icon: const Icon(Icons.send,
-                  color: Colors.white, size: 18),
+              icon: const Icon(Icons.send, color: Colors.white, size: 18),
               onPressed: () => _sendMessage(chat),
             ),
           ),
@@ -254,8 +243,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Clear Chat?'),
-        content: Text(
-            'Delete all messages with ${widget.senderName}?'),
+        content: Text('Delete all messages with ${widget.senderName}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -291,8 +279,7 @@ class _DateSeparator extends StatelessWidget {
     } else if (diff == 1) {
       label = 'Yesterday';
     } else {
-      label =
-          '${date.day}/${date.month}/${date.year}';
+      label = '${date.day}/${date.month}/${date.year}';
     }
 
     return Padding(
@@ -301,8 +288,7 @@ class _DateSeparator extends StatelessWidget {
         children: [
           const Expanded(child: Divider()),
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
               label,
               style: const TextStyle(
@@ -339,42 +325,35 @@ class _MessageBubble extends StatelessWidget {
           Flexible(
             child: Container(
               constraints: BoxConstraints(
-                maxWidth:
-                    MediaQuery.of(context).size.width * 0.75,
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
               ),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: isMe
                     ? AppColors.primary
-                    : Colors.white,
+                    : AppColors.surface, // ← was Colors.white for received
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(18),
                   topRight: const Radius.circular(18),
-                  bottomLeft:
-                      Radius.circular(isMe ? 18 : 4),
-                  bottomRight:
-                      Radius.circular(isMe ? 4 : 18),
+                  bottomLeft: Radius.circular(isMe ? 18 : 4),
+                  bottomRight: Radius.circular(isMe ? 4 : 18),
                 ),
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
-                    color: Colors.black12,
+                    color: Colors.black.withValues(alpha: 0.15), // ← was Colors.black12
                     blurRadius: 3,
-                    offset: Offset(0, 1),
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
                     message.content,
                     style: TextStyle(
                       fontSize: 15,
-                      color: isMe
-                          ? Colors.white
-                          : AppColors.textPrimary,
+                      color: isMe ? Colors.white : AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -383,8 +362,7 @@ class _MessageBubble extends StatelessWidget {
                     children: [
                       if (message.isEncrypted)
                         Padding(
-                          padding: const EdgeInsets.only(
-                              right: 3),
+                          padding: const EdgeInsets.only(right: 3),
                           child: Icon(Icons.lock,
                               size: 10,
                               color: isMe
@@ -395,9 +373,7 @@ class _MessageBubble extends StatelessWidget {
                         _formatTime(message.timestamp),
                         style: TextStyle(
                           fontSize: 10,
-                          color: isMe
-                              ? Colors.white70
-                              : AppColors.textHint,
+                          color: isMe ? Colors.white70 : AppColors.textHint,
                         ),
                       ),
                       if (isMe) ...[
@@ -422,11 +398,9 @@ class _MessageBubble extends StatelessWidget {
         return const Icon(Icons.access_time,
             size: 12, color: Colors.white54);
       case MessageStatus.sent:
-        return const Icon(Icons.check,
-            size: 12, color: Colors.white70);
+        return const Icon(Icons.check, size: 12, color: Colors.white70);
       case MessageStatus.delivered:
-        return const Icon(Icons.done_all,
-            size: 12, color: Colors.white);
+        return const Icon(Icons.done_all, size: 12, color: Colors.white);
       case MessageStatus.failed:
         return const Icon(Icons.error_outline,
             size: 12, color: Colors.redAccent);

@@ -60,21 +60,19 @@ class _SOSScreenState extends State<SOSScreen>
         return Scaffold(
           backgroundColor: _getBackgroundColor(sos.state),
           appBar: AppBar(
-          backgroundColor: AppColors.danger,
-          title: const Text('SOS Emergency'),
-          actions: [
-          // History button
-            IconButton(
-              icon: const Icon(Icons.history),
-              onPressed: () => Navigator.push(
-              context,
+            backgroundColor: AppColors.danger,
+            title: const Text('SOS Emergency'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.history),
+                onPressed: () => Navigator.push(
+                  context,
                   MaterialPageRoute(
                     builder: (_) => const SosHistoryScreen(),
                   ),
                 ),
                 tooltip: 'SOS History',
               ),
-              // Contacts button
               IconButton(
                 icon: const Icon(Icons.contacts),
                 onPressed: () => Navigator.push(
@@ -85,7 +83,6 @@ class _SOSScreenState extends State<SOSScreen>
                 ),
                 tooltip: 'Emergency Contacts',
               ),
-              // Settings button
               IconButton(
                 icon: const Icon(Icons.settings),
                 onPressed: () => _showSettingsDialog(context),
@@ -116,15 +113,15 @@ class _SOSScreenState extends State<SOSScreen>
   Color _getBackgroundColor(SosState state) {
     switch (state) {
       case SosState.countdown:
-        return const Color(0xFFFFEBEE);
+        return AppColors.danger.withValues(alpha: 0.15); // ← was Color(0xFFFFEBEE)
       case SosState.sending:
-        return const Color(0xFFFFEBEE);
+        return AppColors.danger.withValues(alpha: 0.15); // ← was Color(0xFFFFEBEE)
       case SosState.active:
-        return const Color(0xFFFFCDD2);
+        return AppColors.danger.withValues(alpha: 0.25); // ← was Color(0xFFFFCDD2)
       case SosState.cancelled:
-        return const Color(0xFFF5F5F5);
+        return AppColors.background;                     // ← was Color(0xFFF5F5F5)
       default:
-        return const Color(0xFFFFF5F5);
+        return AppColors.background;                     // ← was Color(0xFFFFF5F5)
     }
   }
 
@@ -192,7 +189,6 @@ class _SOSScreenState extends State<SOSScreen>
     return Center(
       child: Column(
         children: [
-          // Countdown ring
           if (sos.state == SosState.countdown)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
@@ -206,7 +202,6 @@ class _SOSScreenState extends State<SOSScreen>
               ),
             ),
 
-          // Main SOS button
           ScaleTransition(
             scale: sos.state == SosState.idle ||
                     sos.state == SosState.countdown
@@ -325,7 +320,7 @@ class _SOSScreenState extends State<SOSScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface, // ← was Colors.white
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -440,7 +435,7 @@ class _SOSScreenState extends State<SOSScreen>
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface, // ← was Colors.white
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
@@ -461,7 +456,9 @@ class _SOSScreenState extends State<SOSScreen>
               children: [
                 Text(title,
                     style: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 14)),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: AppColors.textPrimary)), // ← explicit
                 Text(subtitle,
                     style: const TextStyle(
                         fontSize: 12, color: AppColors.textSecondary)),
@@ -509,21 +506,6 @@ class _SOSScreenState extends State<SOSScreen>
           ],
         ),
         actions: [
-  IconButton(
-    icon: const Icon(Icons.contacts),
-    onPressed: () => Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const EmergencyContactsScreen(),
-      ),
-    ),
-    tooltip: 'Emergency Contacts',
-  ),
-  IconButton(
-    icon: const Icon(Icons.settings),
-    onPressed: () => _showSettingsDialog(context),
-    tooltip: 'Settings',
-  ),
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),

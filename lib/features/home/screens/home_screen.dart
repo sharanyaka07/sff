@@ -30,31 +30,19 @@ class _HomeScreenState extends State<HomeScreen> {
       await _checkFirstLaunch();
     });
   }
+Future<void> _checkFirstLaunch() async {
+  final prefs = await SharedPreferences.getInstance();
 
-  // ── Check first launch using a dedicated flag ─────────────────────
-  Future<void> _checkFirstLaunch() async {
-    final prefs = await SharedPreferences.getInstance();
+  // ← FIXED: just read the flag directly, never overwrite it here
+  final hasSetName = prefs.getBool('has_set_name') ?? false;
 
-    // ── Migration for existing users ──────────────────────────────────
-    // If they already had a real name before this flag existed,
-    // mark as done so the dialog doesn't pop up on update
-    final existingName = await UserPreferences.getUserName();
-    final looksReal = existingName.trim().isNotEmpty &&
-        !existingName.startsWith('User_');
-    if (looksReal) {
-      await prefs.setBool('has_set_name', true);
-    }
-
-    final hasSetName = prefs.getBool('has_set_name') ?? false;
-
-    if (!hasSetName && mounted) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (mounted) {
-        await _showFirstLaunchNameDialog(context);
-      }
+  if (!hasSetName && mounted) {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      await _showFirstLaunchNameDialog(context);
     }
   }
-
+}
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Good Morning';
@@ -71,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Consumer3<HomeController, BluetoothController, SosController>(
       builder: (context, home, bt, sos, _) {
         return Scaffold(
-          backgroundColor: const Color(0xFFF8F9FA),
+          backgroundColor: AppColors.background,
           body: RefreshIndicator(
             onRefresh: home.refresh,
             color: AppColors.primary,
@@ -103,91 +91,107 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── App Bar ──────────────────────────────────────────────────────
-  Widget _buildAppBar(HomeController home) {
-    return SliverAppBar(
-      expandedHeight: 140,
-      floating: false,
-      pinned: true,
-      backgroundColor: AppColors.primary,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.primary, AppColors.primaryDark],
-            ),
+ Widget _buildAppBar(HomeController home) {
+  return SliverAppBar(
+    expandedHeight: 140,        // ← was 170
+    floating: false,
+    pinned: true,
+    elevation: 0,
+    backgroundColor: AppColors.primary,
+    actions: [
+      IconButton(
+        icon: const Icon(Icons.info_outline, color: Colors.white),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AboutScreen()),
+        ),
+        tooltip: 'About',
+      ),
+      IconButton(
+        icon: const Icon(Icons.person_outline, color: Colors.white),
+        onPressed: () => _showProfileDialog(context),
+        tooltip: 'Profile',
+      ),
+    ],
+    flexibleSpace: FlexibleSpaceBar(
+      collapseMode: CollapseMode.pin,
+      background: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.primary, AppColors.primaryDark],
           ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.shield, color: Colors.white, size: 20),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 100, 10), // ← was (20,12,100,20)
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // ── App name row ──────────────────────────────
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),       // ← was 8
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'Safe Connect',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      child: const Icon(
+                        Icons.shield,
+                        color: Colors.white,
+                        size: 18,                             // ← was 20
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'Safe Connect',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,                         // ← was 18
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),                   // ← was 14
+
+                // ── Greeting ──────────────────────────────────
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
                     '${_getGreeting()}, ${home.userName} 👋',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 24,                           // ← was 26
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
                     ),
                   ),
-                  const Text(
-                    'Stay safe, stay connected',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+                const SizedBox(height: 2),                    // ← was 4
+                const Text(
+                  'Stay safe, stay connected',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,                             // ← was 14
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.info_outline, color: Colors.white),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AboutScreen()),
-          ),
-          tooltip: 'About',
-        ),
-        IconButton(
-          icon: const Icon(Icons.person_outline, color: Colors.white),
-          onPressed: () => _showProfileDialog(context),
-          tooltip: 'Profile',
-        ),
-      ],
-    );
-  }
-
-  // ── Bluetooth Status Card ────────────────────────────────────────
+    ),
+  );
+}
   Widget _buildBluetoothCard(BluetoothController bt) {
-    final isConnected = bt.connectedDevices.isNotEmpty;
-    final isScanning = bt.isScanning;
+    final isConnected = bt.connectedDevices.isNotEmpty || bt.serverHasClients;
+    final isScanning  = bt.isScanning;
 
     Color statusColor;
     String statusText;
@@ -195,16 +199,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (isConnected) {
       statusColor = AppColors.success;
-      statusText = '${bt.connectedDevices.length} device(s) connected';
-      statusIcon = Icons.bluetooth_connected;
+      statusText  = bt.connectedDevices.isNotEmpty
+          ? '${bt.connectedDevices.length} device(s) connected'
+          : 'Client connected via GATT';
+      statusIcon  = Icons.bluetooth_connected;
     } else if (isScanning) {
       statusColor = AppColors.warning;
-      statusText = 'Scanning for devices...';
-      statusIcon = Icons.bluetooth_searching;
+      statusText  = 'Scanning for devices...';
+      statusIcon  = Icons.bluetooth_searching;
     } else {
       statusColor = AppColors.textHint;
-      statusText = 'Not connected — tap to scan';
-      statusIcon = Icons.bluetooth_disabled;
+      statusText  = 'Not connected — tap to scan';
+      statusIcon  = Icons.bluetooth_disabled;
     }
 
     return GestureDetector(
@@ -212,11 +218,11 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -227,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.1),
+                color: statusColor.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(statusIcon, color: statusColor, size: 24),
@@ -239,8 +245,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   const Text(
                     'Bluetooth Mesh',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     statusText,
                     style: TextStyle(fontSize: 13, color: statusColor),
@@ -255,14 +266,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             else
-              const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textHint),
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: AppColors.textHint,
+              ),
           ],
         ),
       ),
     );
   }
 
-  // ── Stats Row ────────────────────────────────────────────────────
   Widget _buildStatsRow(HomeController home, SosController sos) {
     return Row(
       children: [
@@ -305,13 +319,13 @@ class _HomeScreenState extends State<HomeScreen> {
     bool small = false,
   }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -320,34 +334,37 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: [
           Icon(icon, color: color, size: 22),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
               fontWeight: FontWeight.w800,
-              fontSize: small ? 12 : 18,
+              fontSize: small ? 13 : 20,
               color: color,
             ),
           ),
+          const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),
     );
   }
 
-  // ── SOS Shortcut ─────────────────────────────────────────────────
   Widget _buildSOSShortcut(SosController sos) {
-    final isActive = sos.state == SosState.active;
+    final isActive    = sos.state == SosState.active;
     final isCountdown = sos.state == SosState.countdown;
 
     return GestureDetector(
       onTap: () => _switchTab(2),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [AppColors.danger, AppColors.dangerDark],
@@ -355,15 +372,19 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.danger.withValues(alpha: 0.35),
-              blurRadius: 12,
-              offset: const Offset(0, 5),
+              color: AppColors.danger.withValues(alpha: 0.4),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
         child: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 40),
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.white,
+              size: 42,
+            ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -378,19 +399,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
-                      fontSize: 17,
+                      fontSize: 18,
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
-                    isActive ? 'Help is on the way' : 'Tap to go to SOS screen',
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    isActive
+                        ? 'Help is on the way'
+                        : 'Tap to go to SOS screen',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
             ),
             if (isActive)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -405,14 +435,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )
             else
-              const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.white54,
+                size: 16,
+              ),
           ],
         ),
       ),
     );
   }
 
-  // ── Quick Actions ─────────────────────────────────────────────────
   Widget _buildQuickActions(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -479,13 +512,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withValues(alpha: 0.12),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -493,8 +526,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 26),
-            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 8),
             Text(
               label,
               textAlign: TextAlign.center,
@@ -510,7 +550,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Recent SOS Activity ──────────────────────────────────────────
   Widget _buildRecentSosActivity(HomeController home) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -528,14 +567,18 @@ class _HomeScreenState extends State<HomeScreen> {
         if (home.recentSosLogs.isEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Column(
               children: [
-                Icon(Icons.check_circle_outline, size: 36, color: AppColors.success),
+                Icon(
+                  Icons.check_circle_outline,
+                  size: 36,
+                  color: AppColors.success,
+                ),
                 SizedBox(height: 8),
                 Text(
                   'No SOS alerts sent',
@@ -544,9 +587,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: AppColors.textSecondary,
                   ),
                 ),
+                SizedBox(height: 2),
                 Text(
-                  'You\'re safe! 🙏',
-                  style: TextStyle(fontSize: 12, color: AppColors.textHint),
+                  "You're safe! 🙏",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textHint,
+                  ),
                 ),
               ],
             ),
@@ -557,14 +604,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSosLogTile(log) {
+  Widget _buildSosLogTile(dynamic log) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.danger.withValues(alpha: 0.15)),
+        border: Border.all(
+          color: AppColors.danger.withValues(alpha: 0.15),
+        ),
       ),
       child: Row(
         children: [
@@ -574,7 +623,11 @@ class _HomeScreenState extends State<HomeScreen> {
               color: AppColors.danger.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 16),
+            child: const Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.danger,
+              size: 16,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -583,26 +636,33 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   'SOS by ${log.userName}',
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
                 ),
                 Text(
                   log.formattedDate,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textHint),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textHint,
+                  ),
                 ),
               ],
             ),
           ),
           Text(
             log.channelsSummary,
-            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),
     );
   }
-
-  // ── First Launch Name Dialog (cannot be dismissed) ────────────────
-  Future<void> _showFirstLaunchNameDialog(BuildContext context) async {
+ Future<void> _showFirstLaunchNameDialog(BuildContext context) async {
     final nameController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
@@ -680,16 +740,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (formKey.currentState!.validate()) {
                     final name = nameController.text.trim();
                     await UserPreferences.setUserName(name);
-
-                    // ── Mark that user has set their name ─────────────
                     final prefs = await SharedPreferences.getInstance();
                     await prefs.setBool('has_set_name', true);
-
                     if (ctx.mounted) {
                       Navigator.pop(ctx);
                       if (mounted) {
                         context.read<HomeController>().loadDashboard();
-                        // Also update BluetoothController with new name
                         context.read<BluetoothController>().initialize();
                       }
                     }

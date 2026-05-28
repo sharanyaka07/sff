@@ -51,7 +51,6 @@ class BleService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Restart if killed
         return START_STICKY
     }
 
@@ -65,7 +64,7 @@ class BleService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Safe Connect Bluetooth",
-                NotificationManager.IMPORTANCE_LOW  // silent — no sound/vibration
+                NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "Keeps Bluetooth connection active"
                 setShowBadge(false)
@@ -81,8 +80,8 @@ class BleService : Service() {
             .setContentText("Bluetooth connection active")
             .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOngoing(true)       // cannot be dismissed by user
-            .setSilent(true)        // no sound
+            .setOngoing(true)
+            .setSilent(true)
             .build()
     }
 }
@@ -114,7 +113,7 @@ class MainActivity : FlutterActivity() {
     private val pendingConnectDevices      = mutableMapOf<String, BluetoothDevice>()
     private val handshakeTimeoutHandlers   = mutableMapOf<String, Runnable>()
     private val mainHandler                = Handler(Looper.getMainLooper())
-    private val HANDSHAKE_TIMEOUT_MS       = 3000L
+    private val HANDSHAKE_TIMEOUT_MS       = 5000L
 
     private var messageSink: EventChannel.EventSink? = null
     private var isServerRunning = false
@@ -132,7 +131,7 @@ class MainActivity : FlutterActivity() {
     override fun onStart() {
         super.onStart()
         acquireWakeLock()
-        startBleService()          // ← Start foreground service
+        startBleService()
         if (!isServerRunning) {
             try {
                 startGattServer()
@@ -146,7 +145,6 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    // ── Start foreground service — survives screen-off ────────────
     private fun startBleService() {
         try {
             val intent = Intent(this, BleService::class.java)
@@ -346,6 +344,23 @@ class MainActivity : FlutterActivity() {
                         }
                         result.success(notifyAllCentrals(payload))
                     }
+                    // ── FIXED: update BLE advertised name when user changes name ──
+                    "updateDeviceName" -> {
+                        val name = call.argument<String>("name") ?: ""
+                        if (name.isNotEmpty()) {
+                            try {
+                                val bm = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+                                bm.adapter.name = name
+                                Log.d("GATT", "Device name updated to: $name")
+                                // Restart advertising so new name is broadcast immediately
+                                advertiser?.stopAdvertising(advertiseCallback)
+                                startAdvertising()
+                            } catch (e: Exception) {
+                                Log.e("GATT", "Failed to update name: ${e.message}")
+                            }
+                        }
+                        result.success(true)
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -505,14 +520,15 @@ class MainActivity : FlutterActivity() {
             for (device in connectedCentrals) {
                 server.notifyCharacteristicChanged(device, char, false)
             }
-            Thread.sleep(30) // tighter than before
+            Thread.sleep(30)
         }
         Log.d("GATT", "Notified ${connectedCentrals.size} centrals ✅")
         return true
     }
 
     // ════════════════════════════════════════════════════════════════
-    // Advertising
+    // Advertising — FIXED: device name in scan response packet
+    // so it never gets truncated due to 31-byte advertisement limit
     // ════════════════════════════════════════════════════════════════
     @SuppressLint("MissingPermission")
     private fun startAdvertising() {
@@ -530,13 +546,23 @@ class MainActivity : FlutterActivity() {
             .setTimeout(0)
             .build()
 
+        // ── Primary advertisement packet (31 bytes max) ──────────
+        // Only service UUID here — no device name to avoid overflow
         val data = AdvertiseData.Builder()
             .addServiceUuid(ParcelUuid(SERVICE_UUID))
-            .setIncludeDeviceName(true)
+            .setIncludeDeviceName(false)
+            .setIncludeTxPowerLevel(false)
             .build()
 
-        advertiser?.startAdvertising(settings, data, advertiseCallback)
-        Log.d("GATT", "Advertising started ✅")
+        // ── Scan response packet (extra 31 bytes) ────────────────
+        // Device name goes here so it is never truncated or dropped
+        val scanResponse = AdvertiseData.Builder()
+            .setIncludeDeviceName(true)
+            .setIncludeTxPowerLevel(false)
+            .build()
+
+        advertiser?.startAdvertising(settings, data, scanResponse, advertiseCallback)
+        Log.d("GATT", "Advertising started with scan response ✅")
     }
 
     private val advertiseCallback = object : AdvertiseCallback() {

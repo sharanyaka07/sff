@@ -7,6 +7,7 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background, // ← explicit
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         title: const Text('About Safe Connect'),
@@ -33,11 +34,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.shield,
-                color: Colors.white,
-                size: 52,
-              ),
+              child: const Icon(Icons.shield, color: Colors.white, size: 52),
             ),
 
             const SizedBox(height: 20),
@@ -52,17 +49,13 @@ class AboutScreen extends StatelessWidget {
             ),
             const Text(
               'Version 1.0.0',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
 
             const SizedBox(height: 8),
 
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
@@ -106,25 +99,17 @@ class AboutScreen extends StatelessWidget {
 
             const SizedBox(height: 32),
 
-            // Features list
             _buildSectionTitle('Key Features'),
             const SizedBox(height: 12),
-            _buildFeatureRow(Icons.bluetooth, 'Bluetooth Mesh Network',
-                AppColors.bluetooth),
-            _buildFeatureRow(Icons.lock, 'AES-256 Encryption',
-                AppColors.success),
-            _buildFeatureRow(Icons.warning_amber_rounded,
-                'Multi-channel SOS', AppColors.danger),
-            _buildFeatureRow(Icons.medical_services,
-                'Multilingual First Aid Guide', AppColors.success),
-            _buildFeatureRow(Icons.notifications,
-                'Background Notifications', AppColors.warning),
-            _buildFeatureRow(
-                Icons.storage, 'Offline SQLite Storage', AppColors.primary),
+            _buildFeatureRow(Icons.bluetooth, 'Bluetooth Mesh Network', AppColors.bluetooth),
+            _buildFeatureRow(Icons.lock, 'AES-256 Encryption', AppColors.success),
+            _buildFeatureRow(Icons.warning_amber_rounded, 'Multi-channel SOS', AppColors.danger),
+            _buildFeatureRow(Icons.medical_services, 'Multilingual First Aid Guide', AppColors.success),
+            _buildFeatureRow(Icons.notifications, 'Background Notifications', AppColors.warning),
+            _buildFeatureRow(Icons.storage, 'Offline SQLite Storage', AppColors.primary),
 
             const SizedBox(height: 32),
 
-            // Tech stack
             _buildSectionTitle('Built With'),
             const SizedBox(height: 12),
             Wrap(
@@ -144,22 +129,16 @@ class AboutScreen extends StatelessWidget {
 
             const SizedBox(height: 40),
 
-            const Divider(),
+            const Divider(color: AppColors.border), // ← was default Divider
             const SizedBox(height: 16),
 
             const Text(
               'Developed as Final Year Project',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textHint,
-              ),
+              style: TextStyle(fontSize: 13, color: AppColors.textHint),
             ),
             const Text(
               '© 2024 Safe Connect',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textHint,
-              ),
+              style: TextStyle(fontSize: 12, color: AppColors.textHint),
             ),
             const SizedBox(height: 40),
           ],
@@ -216,8 +195,7 @@ class AboutScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: Text(
         label,

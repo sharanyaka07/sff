@@ -15,23 +15,28 @@ class ChatScreen extends StatelessWidget {
         final conversations = chat.conversations;
 
         return Scaffold(
+          backgroundColor: AppColors.background,
           appBar: AppBar(
+            backgroundColor: AppColors.surface,
             title: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Chats',
                     style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary)),
                 Text('End-to-end encrypted',
-                    style:
-                        TextStyle(fontSize: 11, color: Colors.white70)),
+                    style: TextStyle(
+                        fontSize: 11, color: AppColors.textHint)),
               ],
             ),
             actions: [
               IconButton(
                 icon: Stack(
                   children: [
-                    const Icon(Icons.bluetooth_searching),
+                    const Icon(Icons.bluetooth_searching,
+                        color: AppColors.primary),
                     if (chat.isBluetoothConnected)
                       Positioned(
                         right: 0,
@@ -64,8 +69,10 @@ class ChatScreen extends StatelessWidget {
                     ? _buildEmptyState(context, chat)
                     : ListView.separated(
                         itemCount: conversations.length,
-                        separatorBuilder: (_, __) =>
-                            const Divider(height: 1, indent: 72),
+                        separatorBuilder: (_, __) => const Divider(
+                            height: 1,
+                            indent: 72,
+                            color: AppColors.border),
                         itemBuilder: (context, index) {
                           final convo = conversations[index];
                           return _ConversationTile(
@@ -108,9 +115,8 @@ class ChatScreen extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding:
-          const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      color: color.withValues(alpha: 0.1),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      color: color.withValues(alpha: 0.12),
       child: Text(
         text,
         style: TextStyle(
@@ -122,17 +128,24 @@ class ChatScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState(
-      BuildContext context, ChatController chat) {
+  Widget _buildEmptyState(BuildContext context, ChatController chat) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.chat_bubble_outline,
-                size: 80, color: AppColors.textHint),
-            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.border, width: 1),
+              ),
+              child: const Icon(Icons.chat_bubble_outline,
+                  size: 56, color: AppColors.textHint),
+            ),
+            const SizedBox(height: 20),
             const Text(
               'No conversations yet',
               style: TextStyle(
@@ -144,8 +157,7 @@ class ChatScreen extends StatelessWidget {
             const Text(
               'Connect to a nearby device\nand start chatting!',
               textAlign: TextAlign.center,
-              style:
-                  TextStyle(fontSize: 13, color: AppColors.textHint),
+              style: TextStyle(fontSize: 13, color: AppColors.textHint),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -181,14 +193,14 @@ class _ConversationTile extends StatelessWidget {
 
     return ListTile(
       onTap: onTap,
+      tileColor: AppColors.background,
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       leading: Stack(
         children: [
           CircleAvatar(
             radius: 26,
-            backgroundColor:
-                AppColors.primary.withValues(alpha: 0.15),
+            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
             child: Text(
               conversation.senderName.isNotEmpty
                   ? conversation.senderName[0].toUpperCase()
@@ -200,7 +212,6 @@ class _ConversationTile extends StatelessWidget {
               ),
             ),
           ),
-          // Green dot if currently connected
           if (isConnected)
             Positioned(
               right: 0,
@@ -211,7 +222,8 @@ class _ConversationTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.success,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(
+                      color: AppColors.surface, width: 2),
                 ),
               ),
             ),
@@ -226,6 +238,7 @@ class _ConversationTile extends StatelessWidget {
                 fontWeight:
                     hasUnread ? FontWeight.bold : FontWeight.w600,
                 fontSize: 15,
+                color: AppColors.textPrimary,
               ),
             ),
           ),
@@ -236,9 +249,8 @@ class _ConversationTile extends StatelessWidget {
               color: hasUnread
                   ? AppColors.primary
                   : AppColors.textHint,
-              fontWeight: hasUnread
-                  ? FontWeight.bold
-                  : FontWeight.normal,
+              fontWeight:
+                  hasUnread ? FontWeight.bold : FontWeight.normal,
             ),
           ),
         ],
@@ -253,7 +265,6 @@ class _ConversationTile extends StatelessWidget {
             ),
           Expanded(
             child: Text(
-              // Show "Tap to start chatting" hint if no messages yet
               conversation.lastMessage,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -269,9 +280,8 @@ class _ConversationTile extends StatelessWidget {
                         'Tap to start chatting 💬'
                     ? FontStyle.italic
                     : FontStyle.normal,
-                fontWeight: hasUnread
-                    ? FontWeight.w500
-                    : FontWeight.normal,
+                fontWeight:
+                    hasUnread ? FontWeight.w500 : FontWeight.normal,
               ),
             ),
           ),
@@ -286,7 +296,7 @@ class _ConversationTile extends StatelessWidget {
               child: Text(
                 '${conversation.unreadCount}',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.background,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),

@@ -4,21 +4,22 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.4.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
 
-# BLE Advertising
-  flutter_ble_peripheral: ^1.0.1
+  # BLE Advertising
+  flutter_ble_peripheral: ^2.1.0        # was ^1.0.1 — fixes KGP warning
+
   # Encryption
   encrypt: ^5.0.3
   pointycastle: ^3.9.1
 
   # UI & Navigation
   cupertino_icons: ^1.0.6
-  go_router: ^13.2.0
+  go_router: ^13.2.0                    # keep — v14+ has breaking changes
 
   # State Management
   provider: ^6.1.2
@@ -26,35 +27,32 @@ dependencies:
   # Local Storage
   sqflite: ^2.3.3
   path: ^1.9.0
-
-  # Simple key-value storage
-  shared_preferences: ^2.2.3
+  shared_preferences: ^2.3.0           # was ^2.2.3 — fixes KGP warning
 
   # Bluetooth
-  flutter_blue_plus: ^1.32.12
-  
+  flutter_blue_plus: ^1.36.8           # was ^1.32.12 — latest in v1 line
 
   # Location / GPS
-  geolocator: ^11.0.0
+  geolocator: ^11.1.0                  # was ^11.0.0
   geocoding: ^3.0.0
 
-  # Firebase
-  firebase_core: ^2.32.0
-  firebase_messaging: ^14.9.4
-  cloud_firestore: ^4.17.5
+  # Firebase — must upgrade as a suite
+  firebase_core: ^3.4.0               # keep v3 suite together
+  firebase_messaging: ^15.1.0
+  cloud_firestore: ^5.4.0
 
   # Permissions
-  permission_handler: ^11.3.1
+  permission_handler: ^11.4.0          # was ^11.3.1 — fixes KGP warning
 
   # Connectivity
-  connectivity_plus: ^6.0.3
+  connectivity_plus: ^6.1.0            # was ^6.0.3
 
   # Utilities
   uuid: ^4.4.0
   intl: ^0.19.0
 
   # Notifications & Background
-  flutter_local_notifications: ^17.2.2
+  flutter_local_notifications: ^18.0.1  # was ^18.0.0
   flutter_background_service: ^5.0.5
 
   # App Icon & Splash
@@ -62,7 +60,10 @@ dependencies:
   flutter_native_splash: ^2.4.1
 
   # Phone Contacts
-  flutter_contacts: ^1.1.9+2
+  flutter_contacts: ^1.1.9+2           # keep — v2 has major API rewrite
+
+  # URL Launcher
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:
@@ -90,6 +91,3 @@ flutter_native_splash:
   android: true
   ios: false
   fullscreen: false
-
-  # BLE Advertising
-  url_launcher: ^6.3.0

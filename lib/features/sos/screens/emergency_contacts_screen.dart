@@ -77,32 +77,27 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
     }
   }
 
-  // ── Refresh after returning from contact picker ───────────────────
   Future<void> _openContactPicker() async {
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const ContactPickerScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const ContactPickerScreen()),
     );
-    // Reload contacts in case new ones were added
     await _loadContacts();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background, // ← explicit
       appBar: AppBar(
         backgroundColor: AppColors.danger,
         title: const Text('Emergency Contacts'),
         actions: [
-          // ── Import from phone contacts ───────────────────────────
           IconButton(
             icon: const Icon(Icons.contacts),
             onPressed: _openContactPicker,
             tooltip: 'Import from phone',
           ),
-          // ── Add manually ─────────────────────────────────────────
           IconButton(
             icon: const Icon(Icons.person_add),
             onPressed: _addContact,
@@ -138,8 +133,6 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                     ],
                   ),
                 ),
-
-                // Contact list
                 Expanded(
                   child: _contacts.isEmpty
                       ? _buildEmptyState()
@@ -162,10 +155,8 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
         onPressed: _addContact,
         backgroundColor: AppColors.danger,
         icon: const Icon(Icons.person_add, color: Colors.white),
-        label: const Text(
-          'Add Contact',
-          style: TextStyle(color: Colors.white),
-        ),
+        label: const Text('Add Contact',
+            style: TextStyle(color: Colors.white)),
       ),
     );
   }
@@ -190,13 +181,9 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
           const Text(
             'Add contacts who will receive\nyour SOS alert via SMS',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textHint,
-            ),
+            style: TextStyle(fontSize: 14, color: AppColors.textHint),
           ),
           const SizedBox(height: 24),
-          // Two buttons — manual add and import from phone
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -228,20 +215,16 @@ class _ContactCard extends StatelessWidget {
   final EmergencyContact contact;
   final VoidCallback onRemove;
 
-  const _ContactCard({
-    required this.contact,
-    required this.onRemove,
-  });
+  const _ContactCard({required this.contact, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: AppColors.surface, // ← explicit dark surface
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: AppColors.danger.withValues(alpha: 0.15),
-        ),
+        side: BorderSide(color: AppColors.danger.withValues(alpha: 0.15)),
       ),
       child: ListTile(
         contentPadding:
@@ -250,9 +233,7 @@ class _ContactCard extends StatelessWidget {
           backgroundColor: AppColors.danger.withValues(alpha: 0.1),
           radius: 24,
           child: Text(
-            contact.name.isNotEmpty
-                ? contact.name[0].toUpperCase()
-                : '?',
+            contact.name.isNotEmpty ? contact.name[0].toUpperCase() : '?',
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -265,6 +246,7 @@ class _ContactCard extends StatelessWidget {
           style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 16,
+            color: AppColors.textPrimary, // ← explicit
           ),
         ),
         subtitle: Column(
@@ -278,7 +260,10 @@ class _ContactCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   contact.phone,
-                  style: const TextStyle(fontSize: 13),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -322,14 +307,8 @@ class _AddContactDialogState extends State<_AddContactDialog> {
   String _selectedRelation = 'Family';
 
   final List<String> _relations = [
-    'Family',
-    'Father',
-    'Mother',
-    'Spouse',
-    'Sibling',
-    'Friend',
-    'Doctor',
-    'Other',
+    'Family', 'Father', 'Mother', 'Spouse',
+    'Sibling', 'Friend', 'Doctor', 'Other',
   ];
 
   @override
@@ -378,10 +357,7 @@ class _AddContactDialogState extends State<_AddContactDialog> {
               prefixIcon: Icon(Icons.people),
             ),
             items: _relations
-                .map((r) => DropdownMenuItem(
-                      value: r,
-                      child: Text(r),
-                    ))
+                .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                 .toList(),
             onChanged: (val) {
               if (val != null) setState(() => _selectedRelation = val);
@@ -395,8 +371,7 @@ class _AddContactDialogState extends State<_AddContactDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
           onPressed: () {
             final name = _nameController.text.trim();
             final phone = _phoneController.text.trim();

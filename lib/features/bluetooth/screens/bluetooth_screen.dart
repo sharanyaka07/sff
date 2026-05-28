@@ -13,7 +13,6 @@ class BluetoothScreen extends StatefulWidget {
 }
 
 class _BluetoothScreenState extends State<BluetoothScreen> {
-  // MAC address regex — used to filter out unnamed devices
   static final _macRegex =
       RegExp(r'^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$');
 
@@ -33,6 +32,7 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     return Consumer<BluetoothController>(
       builder: (context, bt, _) {
         return Scaffold(
+          backgroundColor: AppColors.background, // ← explicit
           appBar: AppBar(
             title: const Text('Bluetooth Devices'),
             actions: [
@@ -60,13 +60,11 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     );
   }
 
-  // ── Status Banner ──────────────────────────────────────────────
   Widget _buildStatusBanner(BluetoothController bt) {
     Color color;
     String text;
     IconData icon;
 
-    // Resolve the best connected name to show in banner
     final connectedName = _resolveConnectedName(bt);
 
     switch (bt.state) {
@@ -119,36 +117,28 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     );
   }
 
-  // ── Resolve the best name for a connected device ───────────────
-  /// Priority: handshake name → platform name → 'Connected Device'
   String _resolveConnectedName(BluetoothController bt) {
-    // 1. If we have a handshake name, always prefer it
     if (bt.connectedClientName.isNotEmpty &&
         !_macRegex.hasMatch(bt.connectedClientName)) {
       return bt.connectedClientName;
     }
-    // 2. Try platform name from connected devices list
     for (final d in bt.connectedDevices) {
       if (d.platformName.isNotEmpty) return d.platformName;
     }
-    // 3. connectedClientName even if it's a MAC (last resort)
     if (bt.connectedClientName.isNotEmpty) return bt.connectedClientName;
-    // 4. Count
     if (bt.connectedDevices.isNotEmpty) {
       return '${bt.connectedDevices.length} device(s)';
     }
     return 'Connected Device';
   }
 
-  // ── Scanning Indicator ─────────────────────────────────────────
   Widget _buildScanningIndicator() {
     return const LinearProgressIndicator(
-      backgroundColor: Color(0xFFE3F2FD),
+      backgroundColor: Color(0xFF1E3A5F), // ← dark navy instead of light blue
       valueColor: AlwaysStoppedAnimation<Color>(AppColors.bluetoothActive),
     );
   }
 
-  // ── Fix Permissions Button ─────────────────────────────────────
   Widget _buildFixPermissionsButton() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -170,7 +160,6 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     );
   }
 
-  // ── Connected Section ──────────────────────────────────────────
   Widget _buildConnectedSection(BluetoothController bt) {
     final hasConnections =
         bt.connectedDevices.isNotEmpty || bt.serverHasClients;
@@ -191,10 +180,7 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
             ),
           ),
         ),
-
-        // ── Outgoing connections (we connected TO them) ────────────
         ...bt.connectedDevices.map((device) {
-          // Prefer handshake name → platform name → 'Connected Device'
           String name;
           if (bt.connectedClientName.isNotEmpty &&
               !_macRegex.hasMatch(bt.connectedClientName)) {
@@ -213,8 +199,6 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
             onTap: () => _showDisconnectDialog(context, device, bt),
           );
         }),
-
-        // ── Incoming connection (they connected TO us) ─────────────
         if (bt.serverHasClients && bt.connectedDevices.isEmpty)
           _DeviceTile(
             name: bt.connectedClientName.isNotEmpty &&
@@ -228,15 +212,12 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
             signalStrength: null,
             onTap: null,
           ),
-
         const Divider(height: 1),
       ],
     );
   }
 
-  // ── Available Section ──────────────────────────────────────────
   Widget _buildAvailableSection(BluetoothController bt) {
-    // Filter out MAC-only (unnamed) devices — only show named devices
     final namedDevices = bt.scanResults.where((result) {
       final name = bt.getDisplayName(result);
       return !_macRegex.hasMatch(name);
@@ -303,7 +284,6 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     );
   }
 
-  // ── Empty State ────────────────────────────────────────────────
   Widget _buildEmptyState(BluetoothController bt) {
     return Center(
       child: Padding(
@@ -366,7 +346,6 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     );
   }
 
-  // ── Connect to Device ──────────────────────────────────────────
   Future<void> _connectToDevice(
     BuildContext context,
     BluetoothDevice device,
@@ -399,7 +378,6 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     }
   }
 
-  // ── Disconnect Dialog ──────────────────────────────────────────
   Future<void> _showDisconnectDialog(
     BuildContext context,
     BluetoothDevice device,
@@ -432,7 +410,7 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
   }
 }
 
-// ── Device Tile Widget ─────────────────────────────────────────────
+// ── Device Tile ────────────────────────────────────────────────────
 class _DeviceTile extends StatelessWidget {
   final String name;
   final String subtitle;
@@ -473,6 +451,7 @@ class _DeviceTile extends StatelessWidget {
         style: const TextStyle(
           fontWeight: FontWeight.w600,
           fontSize: 15,
+          color: AppColors.textPrimary, // ← explicit
         ),
       ),
       subtitle: Text(

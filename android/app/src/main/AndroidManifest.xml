@@ -6,12 +6,11 @@
 
     <!-- Bluetooth API 31+ (Android 12+) -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
-        android:usesPermissionFlags="neverForLocation"
-        tools:targetApi="s" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"
-        tools:targetApi="s" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"
-        tools:targetApi="s" />
+    android:usesPermissionFlags="neverForLocation" />
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
 
     <!-- Bluetooth legacy (API 30 and below) -->
     <uses-permission android:name="android.permission.BLUETOOTH"
@@ -19,35 +18,39 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
         android:maxSdkVersion="30" />
 
-    <!-- Location required for BLE scanning -->
+    <!-- Location for BLE scanning -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <!-- SMS -->
     <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <!-- Contacts -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <!-- Vibration -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
-    <uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <!-- Background & Services -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <!-- BLE hardware feature -->
+    <!-- BLE hardware required -->
     <uses-feature
         android:name="android.hardware.bluetooth_le"
         android:required="true" />
-
-<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
-<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-<uses-permission android:name="android.permission.WAKE_LOCK"/>
-<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"/>
-
 
     <application
         android:label="safe_connect"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <!-- ── Main Activity ── -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -65,15 +68,37 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- ── BleService — MISSING FROM YOUR MANIFEST ── -->
+        <service
+            android:name=".BleService"
+            android:foregroundServiceType="connectedDevice"
+            android:exported="false" />
+
+        <!-- ── FCM Service — needed for background Firebase messages ── -->
+        <service
+            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+            android:exported="false">
+            <intent-filter android:priority="-500">
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
     </application>
 
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />
+        </intent>
+        <!-- Needed to check if SMS app exists -->
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="smsto" />
         </intent>
     </queries>
 
