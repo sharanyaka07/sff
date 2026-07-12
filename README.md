@@ -8,13 +8,18 @@ Safe Connect sends SOS alerts over **three channels simultaneously** (Bluetooth,
 
 ## ✨ Features
 
-- **🆘 SOS Alert** — Hold to trigger a 5-second countdown, then auto-dispatches your GPS location via BLE broadcast, Firebase FCM, and SMS to all emergency contacts
-- **💬 BLE Chat** — Encrypted peer-to-peer messaging over Bluetooth, no internet required
-- **📞 Emergency Contacts** — Import from your phone's address book; used by both SMS and Firebase alerts
-- **🏥 First Aid Chatbot** — Offline keyword-based guide covering CPR, burns, choking, fractures, and more
-- **📍 GPS Location** — Every SOS includes a Google Maps link to your coordinates
+🆘 Multi-Channel SOS Alert — sends via Bluetooth, SMS & Firebase simultaneously
+🔐 AES-256 End-to-End Encrypted Chat — secure messaging over Bluetooth
+☁️ Firebase Cloud Backend — real-time data storage across all devices
+📍 GPS Location Sharing — auto-captures coordinates and shares Google Maps link during SOS
+👥 Emergency Contacts — notifies contacts via SMS instantly
+🗑️ Delete for Me / Delete for Everyone — WhatsApp-style message deletion
+🏥 Built-in First Aid Guide — accessible offline
+🔔 Push Notifications — via Firebase Cloud Messaging
+💾 Offline Storage — SQLite local database for offline use
+📱 Cross-Device Support — works across multiple devices simultaneously
 
----
+
 
 ## 🛠️ Built With
 
@@ -29,35 +34,58 @@ Safe Connect sends SOS alerts over **three channels simultaneously** (Bluetooth,
 ---
 
 ## 🚀 Getting Started
+requisites
 
-```bash
-git clone https://github.com/sharanyaka07/Safe_Connect.git
-cd Safe_Connect
-flutter pub get
-flutter run          # requires a physical Android device for BLE
-```
 
-**Firebase setup:** Add your `google-services.json` to `android/app/` and enable Cloud Messaging + Firestore in the Firebase console.
+Flutter SDK installed
+Android Studio or VS Code
+Android phone with USB debugging enabled
+Firebase project set up
 
----
 
-## 📂 Structure
+Steps
 
-```
+
+Clone the repository
+
+
+bashgit clone https://github.com/sharanyaka07/safe-connect.git
+
+
+Navigate to project folder
+
+
+bashcd safe-connect
+
+
+Install dependencies
+
+
+bashflutter pub get
+
+
+Add your google-services.json file to android/app/
+Run the app
+
+
+bashflutter run
+
+
+🏗️ Project Structure
+
 lib/
-├── core/        # Services: BLE, encryption, GPS, SMS, notifications
-├── data/        # SQLite models + Firebase FCM
+├── core/
+│   ├── services/        # Encryption, GPS, Notifications
+│   ├── theme/           # App theme and colors
+│   └── utils/           # Logger, Permissions
+├── data/
+│   ├── local/           # SQLite database and models
+│   └── remote/          # Firebase services
 └── features/
-    ├── sos/         # SOS screen, contacts, history
-    ├── chat/        # BLE conversation UI
-    ├── bluetooth/   # Device scan & connect
-    └── firstaid/    # Offline chatbot
-```
+    ├── bluetooth/        # Bluetooth controller and screen
+    ├── chat/             # Chat controller and screens
+    ├── home/             # Home screen and controller
+    ├── sos/              # SOS controller and screen
+    └── firstaid/         # First Aid guide
 
----
 
-## 🔒 Permissions Required
-
-`BLUETOOTH_SCAN` · `BLUETOOTH_CONNECT` · `BLUETOOTH_ADVERTISE` · `ACCESS_FINE_LOCATION` · `SEND_SMS` · `READ_CONTACTS` · `POST_NOTIFICATIONS`
-
----
