@@ -6,7 +6,6 @@ import '../../../core/services/user_preferences.dart';
 import '../../bluetooth/controllers/bluetooth_controller.dart';
 import '../../sos/controllers/sos_controller.dart';
 import '../controllers/home_controller.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'about_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -23,26 +22,27 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Permission.notification.request();
+      // ── REMOVED: Permission.notification.request() ──
+      // Already handled in main.dart → AppPermissions.requestAll()
+      // Calling it again here caused a PlatformException crash
       if (mounted) {
         context.read<HomeController>().loadDashboard();
       }
       await _checkFirstLaunch();
     });
   }
-Future<void> _checkFirstLaunch() async {
-  final prefs = await SharedPreferences.getInstance();
 
-  // ← FIXED: just read the flag directly, never overwrite it here
-  final hasSetName = prefs.getBool('has_set_name') ?? false;
-
-  if (!hasSetName && mounted) {
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) {
-      await _showFirstLaunchNameDialog(context);
+  Future<void> _checkFirstLaunch() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSetName = prefs.getBool('has_set_name') ?? false;
+    if (!hasSetName && mounted) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        await _showFirstLaunchNameDialog(context);
+      }
     }
   }
-}
+
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Good Morning';
@@ -91,104 +91,102 @@ Future<void> _checkFirstLaunch() async {
     );
   }
 
- Widget _buildAppBar(HomeController home) {
-  return SliverAppBar(
-    expandedHeight: 140,        // ← was 170
-    floating: false,
-    pinned: true,
-    elevation: 0,
-    backgroundColor: AppColors.primary,
-    actions: [
-      IconButton(
-        icon: const Icon(Icons.info_outline, color: Colors.white),
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AboutScreen()),
-        ),
-        tooltip: 'About',
-      ),
-      IconButton(
-        icon: const Icon(Icons.person_outline, color: Colors.white),
-        onPressed: () => _showProfileDialog(context),
-        tooltip: 'Profile',
-      ),
-    ],
-    flexibleSpace: FlexibleSpaceBar(
-      collapseMode: CollapseMode.pin,
-      background: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.primary, AppColors.primaryDark],
+  Widget _buildAppBar(HomeController home) {
+    return SliverAppBar(
+      expandedHeight: 140,
+      floating: false,
+      pinned: true,
+      elevation: 0,
+      backgroundColor: AppColors.primary,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.info_outline, color: Colors.white),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AboutScreen()),
           ),
+          tooltip: 'About',
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 100, 10), // ← was (20,12,100,20)
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                // ── App name row ──────────────────────────────
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(7),       // ← was 8
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
+        IconButton(
+          icon: const Icon(Icons.person_outline, color: Colors.white),
+          onPressed: () => _showProfileDialog(context),
+          tooltip: 'Profile',
+        ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.pin,
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.primary, AppColors.primaryDark],
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 100, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.shield,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.shield,
+                      const SizedBox(width: 10),
+                      const Text(
+                        'Safe Connect',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '${_getGreeting()}, ${home.userName} 👋',
+                      style: const TextStyle(
                         color: Colors.white,
-                        size: 18,                             // ← was 20
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.2,
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'Safe Connect',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,                         // ← was 18
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),                   // ← was 14
-
-                // ── Greeting ──────────────────────────────────
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '${_getGreeting()}, ${home.userName} 👋',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,                           // ← was 26
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.2,
                     ),
                   ),
-                ),
-                const SizedBox(height: 2),                    // ← was 4
-                const Text(
-                  'Stay safe, stay connected',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,                             // ← was 14
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Stay safe, stay connected',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   Widget _buildBluetoothCard(BluetoothController bt) {
     final isConnected = bt.connectedDevices.isNotEmpty || bt.serverHasClients;
     final isScanning  = bt.isScanning;
@@ -284,7 +282,7 @@ Future<void> _checkFirstLaunch() async {
           child: _buildStatCard(
             icon: Icons.chat_bubble_outline,
             label: 'Messages',
-            value: '${home.messageCount}',
+            value: home.loading ? '...' : '${home.messageCount}',
             color: AppColors.primary,
           ),
         ),
@@ -293,7 +291,7 @@ Future<void> _checkFirstLaunch() async {
           child: _buildStatCard(
             icon: Icons.history,
             label: 'SOS Sent',
-            value: '${home.recentSosLogs.length}',
+            value: home.loading ? '...' : '${home.recentSosLogs.length}',
             color: AppColors.danger,
           ),
         ),
@@ -662,7 +660,8 @@ Future<void> _checkFirstLaunch() async {
       ),
     );
   }
- Future<void> _showFirstLaunchNameDialog(BuildContext context) async {
+
+  Future<void> _showFirstLaunchNameDialog(BuildContext context) async {
     final nameController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
@@ -705,7 +704,7 @@ Future<void> _checkFirstLaunch() async {
                   textCapitalization: TextCapitalization.words,
                   decoration: InputDecoration(
                     labelText: 'Your Name',
-                    hintText: 'e.g. Sharanya',
+                    hintText: 'e.g. Rahul',
                     prefixIcon: const Icon(Icons.person_outline),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -763,7 +762,6 @@ Future<void> _checkFirstLaunch() async {
     );
   }
 
-  // ── Profile Dialog ─────────────────────────────────────────────────
   Future<void> _showProfileDialog(BuildContext context) async {
     final nameController = TextEditingController(
       text: context.read<HomeController>().userName,

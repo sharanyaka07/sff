@@ -6,7 +6,7 @@ import '../../../core/services/notification_service.dart';
 import '../../../data/local/models/message_model.dart';
 import 'package:uuid/uuid.dart';
 
-// Background message handler — must be top-level function
+// Background message handler — must be top-level, only runs on mobile
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -14,14 +14,15 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 class FcmService extends ChangeNotifier {
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  // Only create FirebaseMessaging instance on non-web platforms
+  FirebaseMessaging? get _messaging =>
+      kIsWeb ? null : FirebaseMessaging.instance;
 
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
 
   final List<MessageModel> _onlineMessages = [];
-  List<MessageModel> get onlineMessages =>
-      List.unmodifiable(_onlineMessages);
+  List<MessageModel> get onlineMessages => List.unmodifiable(_onlineMessages);
 
   bool _initialized = false;
   bool get initialized => _initialized;
@@ -33,9 +34,19 @@ class FcmService extends ChangeNotifier {
   }) async {
     if (_initialized) return;
 
+    // FCM is not supported on web — skip silently
+    if (kIsWeb) {
+      AppLogger.info('FCM skipped on web platform', tag: 'FCM');
+      _initialized = true;
+      notifyListeners();
+      return;
+    }
+
     try {
+      final messaging = _messaging!;
+
       // Request notification permissions
-      final settings = await _messaging.requestPermission(
+      final settings = await messaging.requestPermission(
         alert: true,
         badge: true,
         sound: true,
@@ -49,15 +60,17 @@ class FcmService extends ChangeNotifier {
 
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
         AppLogger.warning('FCM permissions denied', tag: 'FCM');
+        _initialized = true;
+        notifyListeners();
         return;
       }
 
       // Get FCM token
-      _fcmToken = await _messaging.getToken();
+      _fcmToken = await messaging.getToken();
       AppLogger.success('FCM Token: $_fcmToken', tag: 'FCM');
 
       // Listen for token refresh
-      _messaging.onTokenRefresh.listen((newToken) {
+      messaging.onTokenRefresh.listen((newToken) {
         _fcmToken = newToken;
         AppLogger.info('FCM Token refreshed', tag: 'FCM');
         notifyListeners();
@@ -72,7 +85,7 @@ class FcmService extends ChangeNotifier {
         _handleIncomingMessage(message, deviceId);
       });
 
-      // Handle background message tap (app was in background)
+      // Handle background message tap
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
         AppLogger.info(
           'Message opened app: ${message.messageId}',
@@ -81,13 +94,13 @@ class FcmService extends ChangeNotifier {
         _handleIncomingMessage(message, deviceId);
       });
 
-      // Register background handler
+      // Register background handler (mobile only)
       FirebaseMessaging.onBackgroundMessage(
         _firebaseMessagingBackgroundHandler,
       );
 
-      // Check for initial message (app opened from terminated state)
-      final initialMessage = await _messaging.getInitialMessage();
+      // Check for initial message
+      final initialMessage = await messaging.getInitialMessage();
       if (initialMessage != null) {
         _handleIncomingMessage(initialMessage, deviceId);
       }
@@ -97,6 +110,8 @@ class FcmService extends ChangeNotifier {
       AppLogger.success('FCM initialized ✅', tag: 'FCM');
     } catch (e) {
       AppLogger.error('FCM init failed', tag: 'FCM', error: e);
+      _initialized = true; // mark done even on failure so app continues
+      notifyListeners();
     }
   }
 
@@ -116,9 +131,7 @@ class FcmService extends ChangeNotifier {
         isMe: data['senderId'] == myDeviceId,
       );
 
-      // Don't show notification for own messages
       if (!chatMessage.isMe) {
-        // ── Show notification based on message type ───────────────
         if (chatMessage.content.contains('🆘') ||
             chatMessage.content.toUpperCase().contains('SOS')) {
           NotificationService.showSosAlert(

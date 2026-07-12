@@ -10,59 +10,31 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # BLE Advertising
-  flutter_ble_peripheral: ^2.1.0        # was ^1.0.1 — fixes KGP warning
-
-  # Encryption
+  flutter_ble_peripheral: ^2.1.0
   encrypt: ^5.0.3
   pointycastle: ^3.9.1
-
-  # UI & Navigation
   cupertino_icons: ^1.0.6
-  go_router: ^13.2.0                    # keep — v14+ has breaking changes
-
-  # State Management
+  go_router: ^13.2.0
   provider: ^6.1.2
-
-  # Local Storage
   sqflite: ^2.3.3
   path: ^1.9.0
-  shared_preferences: ^2.3.0           # was ^2.2.3 — fixes KGP warning
-
-  # Bluetooth
-  flutter_blue_plus: ^1.36.8           # was ^1.32.12 — latest in v1 line
-
-  # Location / GPS
-  geolocator: ^11.1.0                  # was ^11.0.0
+  shared_preferences: ^2.3.0
+  flutter_blue_plus: ^1.36.8
+  geolocator: ^11.1.0
   geocoding: ^3.0.0
-
-  # Firebase — must upgrade as a suite
-  firebase_core: ^3.4.0               # keep v3 suite together
+  firebase_core: ^3.15.2
   firebase_messaging: ^15.1.0
   cloud_firestore: ^5.4.0
-
-  # Permissions
-  permission_handler: ^11.4.0          # was ^11.3.1 — fixes KGP warning
-
-  # Connectivity
-  connectivity_plus: ^6.1.0            # was ^6.0.3
-
-  # Utilities
+  firebase_auth: ^5.3.0
+  permission_handler: ^11.4.0
+  connectivity_plus: ^6.1.0
   uuid: ^4.4.0
   intl: ^0.19.0
-
-  # Notifications & Background
-  flutter_local_notifications: ^18.0.1  # was ^18.0.0
+  flutter_local_notifications: ^18.0.1
   flutter_background_service: ^5.0.5
-
-  # App Icon & Splash
   flutter_launcher_icons: ^0.13.1
   flutter_native_splash: ^2.4.1
-
-  # Phone Contacts
-  flutter_contacts: ^1.1.9+2           # keep — v2 has major API rewrite
-
-  # URL Launcher
+  flutter_contacts: ^1.1.9+2
   url_launcher: ^6.3.0
 
 dev_dependencies:

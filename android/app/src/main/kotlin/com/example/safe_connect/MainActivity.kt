@@ -1,5 +1,6 @@
 package com.example.safe_connect
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
@@ -9,6 +10,7 @@ import android.bluetooth.*
 import android.bluetooth.le.*
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Binder
 import android.os.Build
 import android.os.Handler
@@ -19,6 +21,7 @@ import android.os.PowerManager
 import android.telephony.SmsManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -127,9 +130,31 @@ class MainActivity : FlutterActivity() {
         setupMessageEventChannel(flutterEngine)
     }
 
+    // ── NEW: checks whether the BLE permissions we need are actually granted ──
+    private fun hasBlePermissions(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) ==
+                PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) ==
+                PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADVERTISE) ==
+                PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        }
+    }
+
     @SuppressLint("MissingPermission")
     override fun onStart() {
         super.onStart()
+
+        // ── FIXED: don't touch BLE/foreground-service at all until permissions are granted ──
+        if (!hasBlePermissions()) {
+            Log.w("GATT", "BLE permissions not granted yet — skipping BLE auto-start")
+            return
+        }
+
         acquireWakeLock()
         startBleService()
         if (!isServerRunning) {
@@ -146,6 +171,11 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun startBleService() {
+        // ── FIXED: hard guard, never start the foreground service without permission ──
+        if (!hasBlePermissions()) {
+            Log.w("GATT", "startBleService skipped — BLE permissions missing")
+            return
+        }
         try {
             val intent = Intent(this, BleService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -315,6 +345,11 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "startGattServer" -> {
+                        // ── FIXED: report a clear error to Flutter instead of crashing ──
+                        if (!hasBlePermissions()) {
+                            result.error("PERMISSION_DENIED", "Bluetooth permissions not granted", null)
+                            return@setMethodCallHandler
+                        }
                         try {
                             acquireWakeLock()
                             startBleService()

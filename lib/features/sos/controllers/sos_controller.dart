@@ -12,6 +12,7 @@ import '../../../data/local/models/sos_log_model.dart';
 import '../../bluetooth/controllers/bluetooth_controller.dart';
 import '../../../core/services/ble_broadcast_service.dart';
 import '../../../data/remote/firebase/fcm_service.dart';
+import '../../../data/remote/firebase/firestore_service.dart'; // ← ADDED
 import '../../../core/services/connectivity_service.dart';
 
 enum SosState {
@@ -24,13 +25,13 @@ enum SosState {
 
 class SosController extends ChangeNotifier {
   final BluetoothController _bluetoothController;
-  final FcmService _fcmService; // ← ADDED: injected, not created internally
+  final FcmService _fcmService;
 
   final ConnectivityService _connectivityService = ConnectivityService();
 
   SosController({
     required BluetoothController bluetoothController,
-    required FcmService fcmService, // ← ADDED
+    required FcmService fcmService,
   })  : _bluetoothController = bluetoothController,
         _fcmService = fcmService {
     _bluetoothController.addListener(_onBluetoothChanged);
@@ -49,11 +50,11 @@ class SosController extends ChangeNotifier {
   String _statusMessage = 'Press and hold to send SOS';
   String get statusMessage => _statusMessage;
 
-  bool _smsSent      = false;
+  bool _smsSent       = false;
   bool _bluetoothSent = false;
-  bool _onlineSent   = false;
+  bool _onlineSent    = false;
 
-  bool get smsSent   => _smsSent;
+  bool get smsSent    => _smsSent;
   bool get onlineSent => _onlineSent;
 
   bool get bluetoothSent =>
@@ -198,6 +199,7 @@ class SosController extends ChangeNotifier {
       ),
     ]);
 
+    // ── Save to SQLite (local) ───────────────────────────────────
     final log = SosLog.create(
       userName: userName,
       latitude: _lastPosition?.latitude,
@@ -209,7 +211,13 @@ class SosController extends ChangeNotifier {
       status: 'sent',
     );
     await DbHelper.insertSosLog(log);
-    AppLogger.sos('SOS log saved ✅');
+    AppLogger.sos('SOS log saved to SQLite ✅');
+
+    // ── ADDED: Save to Firestore (cloud) ─────────────────────────
+    FirestoreService.saveSosLog(log).catchError((e) {
+      AppLogger.error('Firestore SOS log failed', tag: 'SOS', error: e);
+    });
+    AppLogger.sos('SOS log saved to Firestore ✅');
 
     _state         = SosState.active;
     _statusMessage = 'SOS ACTIVE — Help is on the way';
@@ -281,7 +289,6 @@ class SosController extends ChangeNotifier {
         return;
       }
 
-      // ← FIXED: uses injected _fcmService, not a new instance
       final result = await _fcmService.sendMessageToToken(
         targetToken: 'broadcast',
         content: message,

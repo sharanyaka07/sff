@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +8,7 @@ import 'core/services/connectivity_service.dart';
 import 'core/utils/logger.dart';
 import 'core/utils/permissions.dart';
 import 'data/remote/firebase/fcm_service.dart';
+import 'data/remote/firebase/firestore_service.dart';
 import 'features/bluetooth/controllers/bluetooth_controller.dart';
 import 'features/chat/controllers/chat_controller.dart';
 import 'features/sos/controllers/sos_controller.dart';
@@ -18,24 +20,46 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 void main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  if (!kIsWeb) {
+    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  }
+
+  if (!kIsWeb) {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  }
 
   try {
-    await Firebase.initializeApp();
+    // ── FIXED: pass FirebaseOptions explicitly so it works on Android ──
+    await Firebase.initializeApp(
+      options: const FirebaseOptions(
+        apiKey: 'AIzaSyC4SQ2DnpejlwdRJs4VEbNUo-Dt7NqH_FM',
+        appId: '1:1078415121786:android:4849356f161ddecc514ac3',
+        messagingSenderId: '1078415121786',
+        projectId: 'safe-connect-6d7ed',
+        storageBucket: 'safe-connect-6d7ed.firebasestorage.app',
+      ),
+    );
     AppLogger.success('Firebase initialized ✅', tag: 'main');
+
+    // Anonymous auth for Firestore security rules
+    await FirestoreService.signInAnonymously();
   } catch (e) {
     AppLogger.error('Firebase init failed', tag: 'main', error: e);
   }
 
   EncryptionService.initialize();
-  await NotificationService.initialize();
 
-  FlutterNativeSplash.remove();
+  if (!kIsWeb) {
+    await NotificationService.initialize();
+  }
+
+  if (!kIsWeb) {
+    FlutterNativeSplash.remove();
+  }
 
   runApp(
     MultiProvider(
@@ -44,7 +68,6 @@ void main() async {
           create: (_) => ConnectivityService(),
           dispose: (_, s) => s.dispose(),
         ),
-        // ── FIXED: Don't call initialize() here — wait for permissions ──
         ChangeNotifierProvider<BluetoothController>(
           create: (_) => BluetoothController(),
         ),
@@ -96,23 +119,44 @@ class _SafeConnectAppState extends State<SafeConnectApp> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Step 1 — request all permissions FIRST
-      await AppPermissions.requestAll(context);
+      // Step 1 — request permissions (mobile only)
+      if (!kIsWeb) {
+        await AppPermissions.requestAll(context);
+      }
 
       if (!mounted) return;
 
-      // Step 2 — NOW initialize BluetoothController after permissions granted
-      // This ensures startPassiveSosScan() succeeds
-      await context.read<BluetoothController>().initialize();
+      // Step 2 — initialize BluetoothController (mobile only)
+      if (!kIsWeb) {
+        await context.read<BluetoothController>().initialize();
+      }
 
       if (!mounted) return;
 
-      // Step 3 — initialize FCM after BT is ready
+      // Step 3 — initialize FCM
       final bt = context.read<BluetoothController>();
-      context.read<FcmService>().initialize(
+      await context.read<FcmService>().initialize(
             deviceId: bt.deviceId,
             deviceName: bt.deviceName,
           );
+
+      if (!mounted) return;
+
+      // Step 4 — save FCM token to Firestore
+      if (!kIsWeb) {
+        final fcmToken = context.read<FcmService>().fcmToken;
+        if (fcmToken != null) {
+          await FirestoreService.saveFcmToken(
+            deviceId: bt.deviceId,
+            deviceName: bt.deviceName,
+            fcmToken: fcmToken,
+          );
+          AppLogger.success(
+            'FCM token registered in Firestore ✅',
+            tag: 'main',
+          );
+        }
+      }
     });
   }
 

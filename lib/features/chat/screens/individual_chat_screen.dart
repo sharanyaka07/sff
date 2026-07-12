@@ -52,11 +52,162 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('⚠️ No connection. Connect via Bluetooth first.'),
+          content: Text('No connection. Connect via Bluetooth first.'),
           backgroundColor: AppColors.warning,
         ),
       );
     }
+  }
+
+  // ── Long-press delete dialog ─────────────────────────────────────
+  void _showDeleteOptions(
+      BuildContext context, ChatController chat, MessageModel message) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textHint,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Delete Message',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const Divider(color: AppColors.border, height: 1),
+
+            // Delete for Me
+            ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: AppColors.surfaceLight,
+                child: Icon(Icons.person_off_outlined,
+                    color: AppColors.textSecondary),
+              ),
+              title: const Text(
+                'Delete for Me',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              subtitle: const Text(
+                'Remove from your device only',
+                style: TextStyle(
+                    fontSize: 12, color: AppColors.textHint),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                chat.deleteMessageForMe(message.id);
+              },
+            ),
+
+            // Delete for Everyone (only for messages sent by me)
+            if (message.isMe)
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0x22FF4444),
+                  child: Icon(Icons.delete_forever_outlined,
+                      color: AppColors.danger),
+                ),
+                title: const Text(
+                  'Delete for Everyone',
+                  style: TextStyle(
+                    color: AppColors.danger,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Remove from all devices & cloud',
+                  style: TextStyle(
+                      fontSize: 12, color: AppColors.textHint),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _confirmDeleteForEveryone(context, chat, message);
+                },
+              ),
+
+            const SizedBox(height: 8),
+
+            // Cancel
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                  ),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Confirm Delete for Everyone ──────────────────────────────────
+  void _confirmDeleteForEveryone(
+      BuildContext context, ChatController chat, MessageModel message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Delete for Everyone?',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: const Text(
+          'This will remove the message from all devices and the cloud database.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel',
+                style: TextStyle(color: AppColors.textHint)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger),
+            onPressed: () {
+              Navigator.pop(ctx);
+              chat.deleteMessageForEveryone(message.id);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -128,12 +279,18 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                           final prevMsg =
                               index > 0 ? messages[index - 1] : null;
                           final showDate = prevMsg == null ||
-                              !_isSameDay(prevMsg.timestamp, msg.timestamp);
+                              !_isSameDay(
+                                  prevMsg.timestamp, msg.timestamp);
                           return Column(
                             children: [
                               if (showDate)
                                 _DateSeparator(date: msg.timestamp),
-                              _MessageBubble(message: msg),
+                              // Long press to show delete options
+                              GestureDetector(
+                                onLongPress: () => _showDeleteOptions(
+                                    context, chat, msg),
+                                child: _MessageBubble(message: msg),
+                              ),
                             ],
                           );
                         },
@@ -193,10 +350,10 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.surface, // ← was Colors.white
+        color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2), // ← was Colors.black12
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -208,12 +365,13 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
             child: TextField(
               controller: _textController,
               textCapitalization: TextCapitalization.sentences,
-              style: const TextStyle(color: AppColors.textPrimary), // ← explicit
+              style: const TextStyle(color: AppColors.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Message',
-                hintStyle: const TextStyle(color: AppColors.textHint),
+                hintStyle:
+                    const TextStyle(color: AppColors.textHint),
                 filled: true,
-                fillColor: AppColors.surfaceLight, // ← was Color(0xFFF0F2F5)
+                fillColor: AppColors.surfaceLight,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
@@ -242,12 +400,18 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     return showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Clear Chat?'),
-        content: Text('Delete all messages with ${widget.senderName}?'),
+        backgroundColor: AppColors.surface,
+        title: const Text('Clear Chat?',
+            style: TextStyle(color: AppColors.textPrimary)),
+        content: Text(
+          'Delete all messages with ${widget.senderName}?',
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const Text('Cancel',
+                style: TextStyle(color: AppColors.textHint)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -327,11 +491,10 @@ class _MessageBubble extends StatelessWidget {
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.75,
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: isMe
-                    ? AppColors.primary
-                    : AppColors.surface, // ← was Colors.white for received
+                color: isMe ? AppColors.primary : AppColors.surface,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(18),
                   topRight: const Radius.circular(18),
@@ -340,7 +503,7 @@ class _MessageBubble extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15), // ← was Colors.black12
+                    color: Colors.black.withValues(alpha: 0.15),
                     blurRadius: 3,
                     offset: const Offset(0, 1),
                   ),
@@ -353,7 +516,9 @@ class _MessageBubble extends StatelessWidget {
                     message.content,
                     style: TextStyle(
                       fontSize: 15,
-                      color: isMe ? Colors.white : AppColors.textPrimary,
+                      color: isMe
+                          ? Colors.white
+                          : AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -373,7 +538,9 @@ class _MessageBubble extends StatelessWidget {
                         _formatTime(message.timestamp),
                         style: TextStyle(
                           fontSize: 10,
-                          color: isMe ? Colors.white70 : AppColors.textHint,
+                          color: isMe
+                              ? Colors.white70
+                              : AppColors.textHint,
                         ),
                       ),
                       if (isMe) ...[
@@ -398,9 +565,11 @@ class _MessageBubble extends StatelessWidget {
         return const Icon(Icons.access_time,
             size: 12, color: Colors.white54);
       case MessageStatus.sent:
-        return const Icon(Icons.check, size: 12, color: Colors.white70);
+        return const Icon(Icons.check,
+            size: 12, color: Colors.white70);
       case MessageStatus.delivered:
-        return const Icon(Icons.done_all, size: 12, color: Colors.white);
+        return const Icon(Icons.done_all,
+            size: 12, color: Colors.white);
       case MessageStatus.failed:
         return const Icon(Icons.error_outline,
             size: 12, color: Colors.redAccent);

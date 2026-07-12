@@ -7,35 +7,55 @@ class AppPermissions {
   static Future<void> requestAll(BuildContext context) async {
     AppLogger.info('Requesting all permissions...', tag: 'Permissions');
 
+    // ── Step 1: Request non-sensitive permissions first ──────────
     final statuses = await [
       Permission.locationWhenInUse,
       Permission.location,
       Permission.bluetoothScan,
       Permission.bluetoothConnect,
       Permission.bluetoothAdvertise,
-      Permission.sms,
       Permission.contacts,
       Permission.notification,
     ].request();
+
+    // ── Step 2: Request SMS separately — non-blocking ────────────
+    // SMS is restricted on sideloaded APKs on some devices.
+    // We catch any error so the app never crashes due to SMS denial.
+    try {
+      final smsStatus = await Permission.sms.request();
+      AppLogger.info('Permission.sms: $smsStatus', tag: 'Permissions');
+    } catch (e) {
+      AppLogger.warning(
+        'SMS permission blocked by device — SOS SMS disabled',
+        tag: 'Permissions',
+      );
+    }
 
     // Log all results
     statuses.forEach((permission, status) {
       AppLogger.info('$permission: $status', tag: 'Permissions');
     });
 
-    // Check critical permissions
-    final denied = statuses.entries
-        .where((e) => !e.value.isGranted)
+    // ── Step 3: Check only CRITICAL permissions (not SMS) ────────
+    final criticalPermissions = [
+      Permission.location,
+      Permission.bluetoothScan,
+      Permission.bluetoothConnect,
+    ];
+
+    final permanentlyDenied = statuses.entries
+        .where((e) =>
+            criticalPermissions.contains(e.key) && e.value.isPermanentlyDenied)
         .map((e) => e.key)
         .toList();
 
-    final permanentlyDenied = statuses.entries
-        .where((e) => e.value.isPermanentlyDenied)
+    final denied = statuses.entries
+        .where((e) =>
+            criticalPermissions.contains(e.key) && !e.value.isGranted)
         .map((e) => e.key)
         .toList();
 
     if (permanentlyDenied.isNotEmpty && context.mounted) {
-      // Some permissions permanently denied — guide to settings
       _showPermanentlyDeniedDialog(context);
     } else if (denied.isNotEmpty && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

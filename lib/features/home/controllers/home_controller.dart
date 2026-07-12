@@ -14,31 +14,49 @@ class HomeController extends ChangeNotifier {
   List<SosLog> _recentSosLogs = [];
   List<SosLog> get recentSosLogs => _recentSosLogs;
 
-  bool _loading = true;
+  bool _loading = false;
   bool get loading => _loading;
 
   // ── Load all dashboard data ──────────────────────────────────────
   Future<void> loadDashboard() async {
+    if (_loading) return; // prevent duplicate calls
     _loading = true;
     notifyListeners();
 
     try {
+      // Load user name
       _userName = await UserPreferences.getUserName();
-      _messageCount = await DbHelper.getMessageCount();
-
-      final allLogs = await DbHelper.getSosLogs();
-      // Show only last 3 SOS logs on dashboard
-      _recentSosLogs = allLogs.take(3).toList();
-
-      AppLogger.info('Dashboard loaded ✅', tag: 'HOME');
     } catch (e) {
-      AppLogger.error('Dashboard load failed', tag: 'HOME', error: e);
+      AppLogger.error('Failed to load user name', tag: 'HOME', error: e);
+      _userName = 'User';
     }
+
+    try {
+      // Load message count
+      _messageCount = await DbHelper.getMessageCount();
+    } catch (e) {
+      AppLogger.error('Failed to load message count', tag: 'HOME', error: e);
+      _messageCount = 0;
+    }
+
+    try {
+      // Load recent SOS logs — show only last 3 on dashboard
+      final allLogs = await DbHelper.getSosLogs();
+      _recentSosLogs = allLogs.take(3).toList();
+    } catch (e) {
+      AppLogger.error('Failed to load SOS logs', tag: 'HOME', error: e);
+      _recentSosLogs = [];
+    }
+
+    AppLogger.info(
+      'Dashboard loaded — user: $_userName, msgs: $_messageCount, sos: ${_recentSosLogs.length}',
+      tag: 'HOME',
+    );
 
     _loading = false;
     notifyListeners();
   }
 
-  // ── Refresh ──────────────────────────────────────────────────────
+  // ── Refresh (pull-to-refresh) ────────────────────────────────────
   Future<void> refresh() => loadDashboard();
 }
