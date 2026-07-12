@@ -75,6 +75,51 @@ bashflutter run
 
 lib/
 ├── core/
+│   ├── services/
+
+---
+
+---
+
+## 🚀 How to Run
+
+### Prerequisites
+- Flutter SDK installed
+- Android Studio or VS Code
+- Android phone with USB debugging enabled
+- Firebase project set up
+
+### Steps
+
+1. Clone the repository
+```bash
+git clone https://github.com/sharanyaka07/safe-connect.git
+```
+
+2. Navigate to project folder
+```bash
+cd safe-connect
+```
+
+3. Install dependencies
+```bash
+flutter pub get
+```
+
+4. Add your `google-services.json` file to `android/app/`
+
+5. Run the app
+```bash
+flutter run
+```
+
+---
+
+## 🏗️ Project Structure
+
+```
+lib/
+├── core/
 │   ├── services/        # Encryption, GPS, Notifications
 │   ├── theme/           # App theme and colors
 │   └── utils/           # Logger, Permissions
@@ -87,5 +132,17 @@ lib/
     ├── home/             # Home screen and controller
     ├── sos/              # SOS controller and screen
     └── firstaid/         # First Aid guide
+```
+
+---
 
 
+---
+
+## 📄 License
+
+This project is developed for educational purposes as part of BCA Final Year Major Project.
+
+---
+
+⭐ If you like this project, give it a star on GitHub!
